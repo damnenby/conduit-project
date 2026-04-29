@@ -23,10 +23,15 @@ const articles: Article[] = [
   },
 ];
 
-articlesRouter.get('/', (_req, res) => {
+articlesRouter.get('/', (req, res) => {
+  const tag = req.query.tag?.toString();
+  const filteredArticles = tag
+    ? articles.filter((article) => article.tagList.includes(tag))
+    : articles;
+
   return res.json({
-    articles,
-    articlesCount: articles.length,
+    articles: filteredArticles,
+    articlesCount: filteredArticles.length,
   });
 });
 
