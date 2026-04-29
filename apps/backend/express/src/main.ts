@@ -1,6 +1,7 @@
 import Express from 'express';
 import bodyParser from 'body-parser';
 import { router } from './modules/books/books.controller';
+import { articlesRouter } from './modules/articles/articles.controller';
 import { dbService } from './modules/db/db.service';
 
 const PORT = 3000;
@@ -19,6 +20,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/books', router);
+app.use('/api/articles', articlesRouter);
 
 // Init server
 app.listen(PORT, () => {
