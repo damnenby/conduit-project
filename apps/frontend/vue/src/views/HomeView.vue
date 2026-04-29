@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 
 type Article = {
   slug: string
@@ -40,7 +41,11 @@ onMounted(() => {
     <ul>
       <li v-for="article in articles" :key="article.slug">
         <article>
-          <h2>{{ article.title }}</h2>
+          <h2>
+            <RouterLink :to="`/articles/${article.slug}`">
+              {{ article.title }}
+            </RouterLink>
+          </h2>
           <p>by {{ article.author.username }}</p>
           <p>{{ article.description }}</p>
           <p>Likes: {{ article.favoritesCount }}</p>
