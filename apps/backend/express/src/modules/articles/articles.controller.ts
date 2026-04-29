@@ -29,3 +29,17 @@ articlesRouter.get('/', (_req, res) => {
     articlesCount: articles.length,
   });
 });
+
+articlesRouter.get('/:slug', (req, res) => {
+  const article = articles.find((item) => item.slug === req.params.slug);
+
+  if (!article) {
+    return res.status(404).json({
+      errors: {
+        body: ['Article not found'],
+      },
+    });
+  }
+
+  return res.json({ article });
+});
