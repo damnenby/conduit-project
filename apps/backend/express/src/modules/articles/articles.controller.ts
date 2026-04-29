@@ -12,7 +12,14 @@ const articles: Article[] = [
     tagList: ['intro'],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    favorited: false,
     favoritesCount: 0,
+    author: {
+      username: 'demo',
+      bio: null,
+      image: null,
+      following: false,
+    },
   },
 ];
 
