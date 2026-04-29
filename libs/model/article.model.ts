@@ -20,5 +20,14 @@ export const ArticleSchema = z.object({
   author: ProfileSchema,
 });
 
+export const CommentSchema = z.object({
+  id: z.number(),
+  body: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  author: ProfileSchema,
+});
+
 export type Profile = z.infer<typeof ProfileSchema>;
 export type Article = z.infer<typeof ArticleSchema>;
+export type Comment = z.infer<typeof CommentSchema>;
