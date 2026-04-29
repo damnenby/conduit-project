@@ -14,6 +14,10 @@ const app = Express();
 app.use(bodyParser.json()).use(bodyParser.urlencoded({ extended: true }));
 
 // Setup routes
+app.get('/api/health', (_req, res) => {
+  return res.json({ status: 'ok' });
+});
+
 app.use('/api/books', router);
 
 // Init server
