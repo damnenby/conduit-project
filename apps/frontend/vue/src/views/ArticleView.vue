@@ -14,8 +14,17 @@ type Article = {
   }
 }
 
+type Comment = {
+  id: number
+  body: string
+  author: {
+    username: string
+  }
+}
+
 const route = useRoute()
 const article = ref<Article | null>(null)
+const comments = ref<Comment[]>([])
 const errorMessage = ref('')
 
 const fetchArticle = async () => {
@@ -35,8 +44,23 @@ const fetchArticle = async () => {
   }
 }
 
+const fetchComments = async () => {
+  try {
+    const slug = route.params.slug?.toString()
+    const response = await fetch(`/api/articles/${slug}/comments`)
+    const data = await response.json()
+
+    if (response.ok) {
+      comments.value = data.comments
+    }
+  } catch {
+    errorMessage.value = 'Could not load comments.'
+  }
+}
+
 onMounted(() => {
   fetchArticle()
+  fetchComments()
 })
 </script>
 
@@ -58,4 +82,15 @@ onMounted(() => {
       </li>
     </ul>
   </article>
+
+  <section>
+    <h2>Comments</h2>
+
+    <ul>
+      <li v-for="comment in comments" :key="comment.id">
+        <p>{{ comment.body }}</p>
+        <p>by {{ comment.author.username }}</p>
+      </li>
+    </ul>
+  </section>
 </template>
