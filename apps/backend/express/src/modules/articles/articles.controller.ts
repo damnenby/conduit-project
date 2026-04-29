@@ -25,9 +25,21 @@ const articles: Article[] = [
 
 articlesRouter.get('/', (req, res) => {
   const tag = req.query.tag?.toString();
-  const filteredArticles = tag
-    ? articles.filter((article) => article.tagList.includes(tag))
-    : articles;
+  const author = req.query.author?.toString();
+
+  let filteredArticles = articles;
+
+  if (tag) {
+    filteredArticles = filteredArticles.filter((article) =>
+      article.tagList.includes(tag),
+    );
+  }
+
+  if (author) {
+    filteredArticles = filteredArticles.filter(
+      (article) => article.author.username === author,
+    );
+  }
 
   return res.json({
     articles: filteredArticles,
