@@ -2,6 +2,7 @@ import Express from 'express';
 import bodyParser from 'body-parser';
 import { router } from './modules/books/books.controller';
 import { articlesRouter } from './modules/articles/articles.controller';
+import { profilesRouter } from './modules/profiles/profiles.controller';
 import { tagsRouter } from './modules/tags/tags.controller';
 import { dbService } from './modules/db/db.service';
 
@@ -22,6 +23,7 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/books', router);
 app.use('/api/articles', articlesRouter);
+app.use('/api/profiles', profilesRouter);
 app.use('/api/tags', tagsRouter);
 
 // Init server
