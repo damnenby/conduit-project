@@ -1,55 +1,57 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-type Book = {
-  id: number
+type Article = {
+  slug: string
   title: string
-  year: number
-  author: string
+  description: string
+  tagList: string[]
+  favoritesCount: number
+  author: {
+    username: string
+  }
 }
 
-const books = ref<Book[]>([])
+const articles = ref<Article[]>([])
+const errorMessage = ref('')
 
-const fetchBooks = () => {
-  fetch('/api/books')
-    .then((response) => response.json())
-    .then((data) => {
-      books.value = data
-    })
+const fetchArticles = async () => {
+  try {
+    const response = await fetch('/api/articles')
+    const data = await response.json()
+    articles.value = data.articles
+  } catch {
+    errorMessage.value = 'Could not load articles.'
+  }
 }
 
 onMounted(() => {
-  fetchBooks()
+  fetchArticles()
 })
-
-const createBook = async () => {
-  const newBook: Omit<Book, 'id'> = {
-    title: 'New book',
-    author: 'Unknown',
-    year: new Date().getFullYear(),
-  }
-
-  // send to backend/db
-  fetch('/api/books', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(newBook),
-  })
-    .then((response) => response.json())
-    .then(() => fetchBooks())
-}
 </script>
 
 <template>
-  <div>
-    <h1>Books</h1>
+  <section>
+    <h1>Conduit</h1>
+    <p>A simple page for reading articles.</p>
 
-    <ol>
-      <li v-for="book in books" :key="book.id">{{ book.title }}</li>
-    </ol>
+    <p v-if="errorMessage">{{ errorMessage }}</p>
 
-    <button @click="createBook()">Add book</button>
-  </div>
+    <ul>
+      <li v-for="article in articles" :key="article.slug">
+        <article>
+          <h2>{{ article.title }}</h2>
+          <p>by {{ article.author.username }}</p>
+          <p>{{ article.description }}</p>
+          <p>Likes: {{ article.favoritesCount }}</p>
+
+          <ul>
+            <li v-for="tag in article.tagList" :key="tag">
+              {{ tag }}
+            </li>
+          </ul>
+        </article>
+      </li>
+    </ul>
+  </section>
 </template>
