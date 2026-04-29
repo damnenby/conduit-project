@@ -1,0 +1,33 @@
+{
+  "name": "web-eng-2026",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "start:express": "pnpm --filter 'express' start",
+    "build:express": "pnpm --filter 'express' build",
+    "start:nest": "pnpm --filter 'nest' start:dev",
+    "build:nest": "pnpm --filter 'nest' build",
+    "start:vue": "pnpm --filter 'vue' dev",
+    "build:vue": "pnpm --filter 'vue' build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.33.0",
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.19",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^24.12.2",
+    "eslint": "^10.2.0",
+    "prettier": "^3.8.1",
+    "prisma": "^7.7.0",
+    "typescript": "^6.0.2"
+  },
+  "dependencies": {
+    "@prisma/adapter-better-sqlite3": "^7.7.0",
+    "@prisma/client": "^7.7.0",
+    "dotenv": "^17.4.2",
+    "zod": "^4.3.6"
+  }
+}

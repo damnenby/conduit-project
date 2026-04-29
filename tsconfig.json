@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "module": "es2022",
+    "moduleResolution": "bundler",
+    "resolvePackageJsonExports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "esnext",
+    "sourceMap": true,
+    "types": ["node"],
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": true,
+    "noImplicitAny": false,
+    "noFallthroughCasesInSwitch": false,
+    "verbatimModuleSyntax": true,
+    "rootDir": ".",
+    "outDir": "./dist",
+    "paths": {
+      "@common/model": ["./libs/model/index.ts"],
+      "@common/database": ["./libs/database/index.ts"]
+    }
+  },
+  "exclude": ["dist"]
+}

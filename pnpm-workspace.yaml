@@ -1,0 +1,9 @@
+packages:
+  - 'apps/**'
+allowBuilds:
+  '@nestjs/core': false
+  '@prisma/engines': true
+  better-sqlite3: true
+  esbuild: false
+  prisma: false
+  unrs-resolver: false
