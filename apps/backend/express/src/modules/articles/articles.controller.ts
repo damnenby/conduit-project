@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import type { Article } from '@common/model';
+import type { Article, Comment } from '@common/model';
 
 export const articlesRouter: Router = Router();
 
@@ -14,6 +14,21 @@ const articles: Article[] = [
     updatedAt: new Date().toISOString(),
     favorited: false,
     favoritesCount: 0,
+    author: {
+      username: 'demo',
+      bio: null,
+      image: null,
+      following: false,
+    },
+  },
+];
+
+const comments: Comment[] = [
+  {
+    id: 1,
+    body: 'This is a first example comment.',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     author: {
       username: 'demo',
       bio: null,
@@ -59,4 +74,18 @@ articlesRouter.get('/:slug', (req, res) => {
   }
 
   return res.json({ article });
+});
+
+articlesRouter.get('/:slug/comments', (req, res) => {
+  const article = articles.find((item) => item.slug === req.params.slug);
+
+  if (!article) {
+    return res.status(404).json({
+      errors: {
+        body: ['Article not found'],
+      },
+    });
+  }
+
+  return res.json({ comments });
 });
