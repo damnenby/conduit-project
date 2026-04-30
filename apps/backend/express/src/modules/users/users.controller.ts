@@ -1,11 +1,27 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import type { User } from '@common/model';
+import { requireAuth, type AuthRequest } from '../../middleware/auth';
 import { createToken } from '../../utils/jwt';
 import { checkPassword, hashPassword } from '../../utils/password';
 
 export const usersRouter: Router = Router();
+export const currentUserRouter: Router = Router();
 
-const users: Array<User & { id: number; passwordHash: string }> = [];
+type StoredUser = User & { id: number; passwordHash: string };
+
+const users: StoredUser[] = [];
+
+const sendUser = (res: Response, user: User) => {
+  return res.json({
+    user: {
+      email: user.email,
+      token: user.token,
+      username: user.username,
+      bio: user.bio,
+      image: user.image,
+    },
+  });
+};
 
 usersRouter.post('/', async (req, res) => {
   const username = req.body?.user?.username;
@@ -70,14 +86,22 @@ usersRouter.post('/login', async (req, res) => {
   }
 
   const token = createToken(user.id);
+  user.token = token;
 
-  return res.json({
-    user: {
-      email: user.email,
-      token,
-      username: user.username,
-      bio: user.bio,
-      image: user.image,
-    },
-  });
+  return sendUser(res, user);
+});
+
+currentUserRouter.get('/', requireAuth, (req, res) => {
+  const authReq = req as AuthRequest;
+  const user = users.find((item) => item.id === authReq.userId);
+
+  if (!user) {
+    return res.status(404).json({
+      errors: {
+        body: ['User not found'],
+      },
+    });
+  }
+
+  return sendUser(res, user);
 });

@@ -4,7 +4,10 @@ import { router } from './modules/books/books.controller';
 import { articlesRouter } from './modules/articles/articles.controller';
 import { profilesRouter } from './modules/profiles/profiles.controller';
 import { tagsRouter } from './modules/tags/tags.controller';
-import { usersRouter } from './modules/users/users.controller';
+import {
+  currentUserRouter,
+  usersRouter,
+} from './modules/users/users.controller';
 import { dbService } from './modules/db/db.service';
 
 const PORT = 3000;
@@ -26,6 +29,7 @@ app.use('/api/books', router);
 app.use('/api/articles', articlesRouter);
 app.use('/api/profiles', profilesRouter);
 app.use('/api/tags', tagsRouter);
+app.use('/api/user', currentUserRouter);
 app.use('/api/users', usersRouter);
 
 // Init server
