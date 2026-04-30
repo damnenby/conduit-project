@@ -2,6 +2,7 @@
   <header>
     <nav>
       <RouterLink to="/">Conduit</RouterLink>
+      <RouterLink to="/login">Login</RouterLink>
       <RouterLink to="/register">Register</RouterLink>
     </nav>
   </header>
