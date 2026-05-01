@@ -8,6 +8,7 @@ type Article = {
   description: string
   body: string
   tagList: string[]
+  favorited: boolean
   favoritesCount: number
   author: {
     username: string
@@ -58,6 +59,20 @@ const fetchComments = async () => {
   }
 }
 
+const toggleFavorite = async () => {
+  if (!article.value) return
+
+  const method = article.value.favorited ? 'DELETE' : 'POST'
+  const response = await fetch(`/api/articles/${article.value.slug}/favorite`, {
+    method,
+  })
+  const data = await response.json()
+
+  if (response.ok) {
+    article.value = data.article
+  }
+}
+
 onMounted(() => {
   fetchArticle()
   fetchComments()
@@ -75,6 +90,9 @@ onMounted(() => {
     <p>{{ article.body }}</p>
 
     <p>Likes: {{ article.favoritesCount }}</p>
+    <button @click="toggleFavorite">
+      {{ article.favorited ? 'Unfavorite' : 'Favorite' }}
+    </button>
 
     <ul>
       <li v-for="tag in article.tagList" :key="tag">
