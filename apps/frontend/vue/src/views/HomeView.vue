@@ -46,7 +46,12 @@ onMounted(() => {
               {{ article.title }}
             </RouterLink>
           </h2>
-          <p>by {{ article.author.username }}</p>
+          <p>
+            by
+            <RouterLink :to="`/profiles/${article.author.username}`">
+              {{ article.author.username }}
+            </RouterLink>
+          </p>
           <p>{{ article.description }}</p>
           <p>Likes: {{ article.favoritesCount }}</p>
 
