@@ -89,3 +89,41 @@ articlesRouter.get('/:slug/comments', (req, res) => {
 
   return res.json({ comments });
 });
+
+articlesRouter.post('/:slug/favorite', (req, res) => {
+  const article = articles.find((item) => item.slug === req.params.slug);
+
+  if (!article) {
+    return res.status(404).json({
+      errors: {
+        body: ['Article not found'],
+      },
+    });
+  }
+
+  if (!article.favorited) {
+    article.favorited = true;
+    article.favoritesCount += 1;
+  }
+
+  return res.json({ article });
+});
+
+articlesRouter.delete('/:slug/favorite', (req, res) => {
+  const article = articles.find((item) => item.slug === req.params.slug);
+
+  if (!article) {
+    return res.status(404).json({
+      errors: {
+        body: ['Article not found'],
+      },
+    });
+  }
+
+  if (article.favorited) {
+    article.favorited = false;
+    article.favoritesCount -= 1;
+  }
+
+  return res.json({ article });
+});
