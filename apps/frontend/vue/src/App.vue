@@ -2,6 +2,7 @@
   <header>
     <nav>
       <RouterLink to="/">Conduit</RouterLink>
+      <RouterLink to="/feed">Feed</RouterLink>
 
       <template v-if="isLoggedIn">
         <span>{{ user?.username }}</span>
