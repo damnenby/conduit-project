@@ -62,6 +62,15 @@ articlesRouter.get('/', (req, res) => {
   });
 });
 
+articlesRouter.get('/feed', (_req, res) => {
+  const feedArticles = articles.filter((article) => article.author.following);
+
+  return res.json({
+    articles: feedArticles,
+    articlesCount: feedArticles.length,
+  });
+});
+
 articlesRouter.get('/:slug', (req, res) => {
   const article = articles.find((item) => item.slug === req.params.slug);
 
