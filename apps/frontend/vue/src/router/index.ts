@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import ArticleView from '../views/ArticleView.vue'
+import FeedView from '../views/FeedView.vue'
 import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
 import ProfileView from '../views/ProfileView.vue'
@@ -12,6 +13,11 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
+    },
+    {
+      path: '/feed',
+      name: 'feed',
+      component: FeedView,
     },
     {
       path: '/articles/:slug',
