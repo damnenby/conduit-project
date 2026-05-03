@@ -30,6 +30,20 @@ const fetchProfile = async () => {
   }
 }
 
+const toggleFollow = async () => {
+  if (!profile.value) return
+
+  const method = profile.value.following ? 'DELETE' : 'POST'
+  const response = await fetch(`/api/profiles/${profile.value.username}/follow`, {
+    method,
+  })
+  const data = await response.json()
+
+  if (response.ok) {
+    profile.value = data.profile
+  }
+}
+
 onMounted(() => {
   fetchProfile()
 })
@@ -43,6 +57,9 @@ onMounted(() => {
       <h1>{{ profile.username }}</h1>
       <p>{{ profile.bio ?? 'No bio yet.' }}</p>
       <p>Following: {{ profile.following ? 'yes' : 'no' }}</p>
+      <button @click="toggleFollow">
+        {{ profile.following ? 'Unfollow' : 'Follow' }}
+      </button>
     </div>
   </section>
 </template>
