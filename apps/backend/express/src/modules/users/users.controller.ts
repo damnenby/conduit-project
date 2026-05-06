@@ -36,6 +36,14 @@ usersRouter.post('/', async (req, res) => {
     });
   }
 
+  if (password.length < 8) {
+    return res.status(422).json({
+      errors: {
+        body: ['Password must be at least 8 characters long'],
+      },
+    });
+  }
+
   const id = users.length + 1;
   const passwordHash = await hashPassword(password);
   const token = createToken(id);
