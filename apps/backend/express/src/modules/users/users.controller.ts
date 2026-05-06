@@ -129,3 +129,84 @@ currentUserRouter.get('/', requireAuth, (req, res) => {
 
   return sendUser(res, user);
 });
+
+currentUserRouter.put('/', requireAuth, async (req, res) => {
+  const authReq = req as AuthRequest;
+  const user = users.find((item) => item.id === authReq.userId);
+
+  if (!user) {
+    return res.status(404).json({
+      errors: {
+        body: ['User not found'],
+      },
+    });
+  }
+
+  const username = req.body?.user?.username;
+  const email = req.body?.user?.email;
+  const password = req.body?.user?.password;
+  const bio = req.body?.user?.bio;
+  const image = req.body?.user?.image;
+
+  if (
+    username === undefined &&
+    email === undefined &&
+    password === undefined &&
+    bio === undefined &&
+    image === undefined
+  ) {
+    return res.status(422).json({
+      errors: {
+        body: ['At least one field is required'],
+      },
+    });
+  }
+
+  if (email !== undefined && !email) {
+    return res.status(422).json({
+      errors: {
+        body: ['Email cannot be empty'],
+      },
+    });
+  }
+
+  if (username !== undefined && !username) {
+    return res.status(422).json({
+      errors: {
+        body: ['Username cannot be empty'],
+      },
+    });
+  }
+
+  if (password !== undefined && password.length < 8) {
+    return res.status(422).json({
+      errors: {
+        body: ['Password must be at least 8 characters long'],
+      },
+    });
+  }
+
+  if (email !== undefined && users.some((item) => item.email === email && item.id !== user.id)) {
+    return res.status(422).json({
+      errors: {
+        body: ['Email is already used'],
+      },
+    });
+  }
+
+  if (username !== undefined && users.some((item) => item.username === username && item.id !== user.id)) {
+    return res.status(422).json({
+      errors: {
+        body: ['Username is already used'],
+      },
+    });
+  }
+
+  if (email !== undefined) user.email = email;
+  if (username !== undefined) user.username = username;
+  if (bio !== undefined) user.bio = bio || null;
+  if (image !== undefined) user.image = image || null;
+  if (password !== undefined) user.passwordHash = await hashPassword(password);
+
+  return sendUser(res, user);
+});
