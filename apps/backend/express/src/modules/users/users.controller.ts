@@ -44,6 +44,22 @@ usersRouter.post('/', async (req, res) => {
     });
   }
 
+  if (users.some((item) => item.email === email)) {
+    return res.status(422).json({
+      errors: {
+        body: ['Email is already used'],
+      },
+    });
+  }
+
+  if (users.some((item) => item.username === username)) {
+    return res.status(422).json({
+      errors: {
+        body: ['Username is already used'],
+      },
+    });
+  }
+
   const id = users.length + 1;
   const passwordHash = await hashPassword(password);
   const token = createToken(id);
