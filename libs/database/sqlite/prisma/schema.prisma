@@ -24,6 +24,8 @@ model User {
   articles     Article[]
   comments     Comment[]
   favorites    Favorite[]
+  following    Follow[]  @relation("following")
+  followers    Follow[]  @relation("followers")
 }
 
 model Article {
@@ -74,4 +76,13 @@ model Favorite {
   article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
 
   @@id([userId, articleId])
+}
+
+model Follow {
+  followerId  Int
+  followingId Int
+  follower    User @relation("following", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User @relation("followers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
 }
