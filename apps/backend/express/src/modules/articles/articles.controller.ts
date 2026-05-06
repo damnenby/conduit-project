@@ -100,7 +100,7 @@ articlesRouter.get('/:slug/comments', (req, res) => {
   return res.json({ comments });
 });
 
-articlesRouter.post('/:slug/favorite', (req, res) => {
+articlesRouter.post('/:slug/favorite', requireAuth, (req, res) => {
   const article = articles.find((item) => item.slug === req.params.slug);
 
   if (!article) {
@@ -119,7 +119,7 @@ articlesRouter.post('/:slug/favorite', (req, res) => {
   return res.json({ article });
 });
 
-articlesRouter.delete('/:slug/favorite', (req, res) => {
+articlesRouter.delete('/:slug/favorite', requireAuth, (req, res) => {
   const article = articles.find((item) => item.slug === req.params.slug);
 
   if (!article) {
