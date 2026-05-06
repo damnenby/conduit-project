@@ -8,5 +8,11 @@
  *
  * 🟢 You can import this file directly.
  */
-export type * from './models/Book'
+export type * from './models/User'
+export type * from './models/Article'
+export type * from './models/Tag'
+export type * from './models/ArticleTag'
+export type * from './models/Comment'
+export type * from './models/Favorite'
+export type * from './models/Follow'
 export type * from './commonInputTypes'
