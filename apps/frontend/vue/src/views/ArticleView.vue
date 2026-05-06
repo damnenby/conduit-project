@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAuth } from '../composables/useAuth'
 
 type Article = {
   slug: string
@@ -24,6 +25,7 @@ type Comment = {
 }
 
 const route = useRoute()
+const { user } = useAuth()
 const article = ref<Article | null>(null)
 const comments = ref<Comment[]>([])
 const errorMessage = ref('')
@@ -62,14 +64,25 @@ const fetchComments = async () => {
 const toggleFavorite = async () => {
   if (!article.value) return
 
+  if (!user.value) {
+    errorMessage.value = 'Please login to favorite articles.'
+    return
+  }
+
   const method = article.value.favorited ? 'DELETE' : 'POST'
   const response = await fetch(`/api/articles/${article.value.slug}/favorite`, {
     method,
+    headers: {
+      Authorization: `Token ${user.value.token}`,
+    },
   })
   const data = await response.json()
 
   if (response.ok) {
     article.value = data.article
+    errorMessage.value = ''
+  } else {
+    errorMessage.value = data.errors?.body?.[0] ?? 'Could not update favorite.'
   }
 }
 
