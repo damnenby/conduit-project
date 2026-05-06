@@ -6,6 +6,7 @@ import LoginView from '../views/LoginView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import SettingsView from '../views/SettingsView.vue'
+import { useAuth } from '../composables/useAuth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -19,6 +20,9 @@ const router = createRouter({
       path: '/feed',
       name: 'feed',
       component: FeedView,
+      meta: {
+        requiresAuth: true,
+      },
     },
     {
       path: '/articles/:slug',
@@ -44,6 +48,9 @@ const router = createRouter({
       path: '/settings',
       name: 'settings',
       component: SettingsView,
+      meta: {
+        requiresAuth: true,
+      },
     },
     {
       path: '/about',
@@ -54,6 +61,14 @@ const router = createRouter({
       component: () => import('../views/AboutView.vue'),
     },
   ],
+})
+
+router.beforeEach((to) => {
+  const { isLoggedIn } = useAuth()
+
+  if (to.meta.requiresAuth && !isLoggedIn.value) {
+    return { name: 'login' }
+  }
 })
 
 export default router
