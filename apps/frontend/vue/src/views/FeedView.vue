@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useAuth } from '../composables/useAuth'
 
 type Article = {
   slug: string
@@ -13,11 +14,24 @@ type Article = {
 
 const articles = ref<Article[]>([])
 const errorMessage = ref('')
+const { user } = useAuth()
 
 const fetchFeed = async () => {
+  if (!user.value) return
+
   try {
-    const response = await fetch('/api/articles/feed')
+    const response = await fetch('/api/articles/feed', {
+      headers: {
+        Authorization: `Token ${user.value.token}`,
+      },
+    })
     const data = await response.json()
+
+    if (!response.ok) {
+      errorMessage.value = data.errors?.body?.[0] ?? 'Could not load feed.'
+      return
+    }
+
     articles.value = data.articles
   } catch {
     errorMessage.value = 'Could not load feed.'

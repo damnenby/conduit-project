@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { Article, Comment } from '@common/model';
+import { requireAuth } from '../../middleware/auth';
 
 export const articlesRouter: Router = Router();
 
@@ -62,7 +63,7 @@ articlesRouter.get('/', (req, res) => {
   });
 });
 
-articlesRouter.get('/feed', (_req, res) => {
+articlesRouter.get('/feed', requireAuth, (_req, res) => {
   const feedArticles = articles.filter((article) => article.author.following);
 
   return res.json({
