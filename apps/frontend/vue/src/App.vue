@@ -5,6 +5,7 @@
       <RouterLink to="/feed">Feed</RouterLink>
 
       <template v-if="isLoggedIn">
+        <RouterLink to="/settings">Settings</RouterLink>
         <span>{{ user?.username }}</span>
         <button @click="logout">Logout</button>
       </template>
