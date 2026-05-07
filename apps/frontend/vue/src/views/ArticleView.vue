@@ -149,6 +149,29 @@ const postComment = async () => {
   }
 }
 
+const deleteComment = async (commentId: number) => {
+  if (!article.value || !user.value) return
+
+  const response = await fetch(
+    `/api/articles/${article.value.slug}/comments/${commentId}`,
+    {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Token ${user.value.token}`,
+      },
+    },
+  )
+
+  if (response.ok) {
+    comments.value = comments.value.filter((comment) => comment.id !== commentId)
+    errorMessage.value = ''
+    return
+  }
+
+  const data = await response.json()
+  errorMessage.value = data.errors?.body?.[0] ?? 'Could not delete comment.'
+}
+
 onMounted(() => {
   fetchArticle()
   fetchComments()
@@ -201,6 +224,12 @@ onMounted(() => {
       <li v-for="comment in comments" :key="comment.id">
         <p>{{ comment.body }}</p>
         <p>by {{ comment.author.username }}</p>
+        <button
+          v-if="comment.author.username === user?.username"
+          @click="deleteComment(comment.id)"
+        >
+          Delete
+        </button>
       </li>
     </ul>
   </section>
