@@ -398,6 +398,63 @@ articlesRouter.post('/:slug/comments', requireAuth, (req, res) => {
   });
 });
 
+articlesRouter.delete('/:slug/comments/:id', requireAuth, (req, res) => {
+  const authReq = req as AuthRequest;
+  const user = findUserById(authReq.userId);
+  const article = articles.find((item) => item.slug === req.params.slug);
+  const commentId = Number(req.params.id);
+
+  if (!user) {
+    return res.status(404).json({
+      errors: {
+        body: ['User not found'],
+      },
+    });
+  }
+
+  if (!article) {
+    return res.status(404).json({
+      errors: {
+        body: ['Article not found'],
+      },
+    });
+  }
+
+  const commentIndex = comments.findIndex(
+    (comment) => comment.articleSlug === article.slug && comment.id === commentId,
+  );
+
+  if (commentIndex === -1) {
+    return res.status(404).json({
+      errors: {
+        body: ['Comment not found'],
+      },
+    });
+  }
+
+  const comment = comments[commentIndex];
+
+  if (!comment) {
+    return res.status(404).json({
+      errors: {
+        body: ['Comment not found'],
+      },
+    });
+  }
+
+  if (comment.author.username !== user.username) {
+    return res.status(403).json({
+      errors: {
+        body: ['You can only delete your own comments'],
+      },
+    });
+  }
+
+  comments.splice(commentIndex, 1);
+
+  return res.sendStatus(204);
+});
+
 articlesRouter.post('/:slug/favorite', requireAuth, (req, res) => {
   const article = articles.find((item) => item.slug === req.params.slug);
 
