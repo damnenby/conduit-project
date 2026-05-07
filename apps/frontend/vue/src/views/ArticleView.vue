@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 
 type Article = {
@@ -132,6 +132,9 @@ onMounted(() => {
     </button>
 
     <button v-if="isOwnArticle" @click="deleteArticle">Delete article</button>
+    <RouterLink v-if="isOwnArticle" :to="`/editor/${article.slug}`">
+      Edit article
+    </RouterLink>
 
     <ul>
       <li v-for="tag in article.tagList" :key="tag">

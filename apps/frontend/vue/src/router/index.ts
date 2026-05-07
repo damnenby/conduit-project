@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import ArticleView from '../views/ArticleView.vue'
+import EditArticleView from '../views/EditArticleView.vue'
 import FeedView from '../views/FeedView.vue'
 import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
@@ -29,6 +30,14 @@ const router = createRouter({
       path: '/editor',
       name: 'new-article',
       component: NewArticleView,
+      meta: {
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/editor/:slug',
+      name: 'edit-article',
+      component: EditArticleView,
       meta: {
         requiresAuth: true,
       },
