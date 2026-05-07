@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { Profile } from '@common/model';
+import { requireAuth } from '../../middleware/auth';
 
 export const profilesRouter: Router = Router();
 
@@ -26,7 +27,7 @@ profilesRouter.get('/:username', (req, res) => {
   return res.json({ profile });
 });
 
-profilesRouter.post('/:username/follow', (req, res) => {
+profilesRouter.post('/:username/follow', requireAuth, (req, res) => {
   const profile = profiles.find((item) => item.username === req.params.username);
 
   if (!profile) {
@@ -42,7 +43,7 @@ profilesRouter.post('/:username/follow', (req, res) => {
   return res.json({ profile });
 });
 
-profilesRouter.delete('/:username/follow', (req, res) => {
+profilesRouter.delete('/:username/follow', requireAuth, (req, res) => {
   const profile = profiles.find((item) => item.username === req.params.username);
 
   if (!profile) {
