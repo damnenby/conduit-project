@@ -272,6 +272,50 @@ articlesRouter.put('/:slug', requireAuth, (req, res) => {
   return res.json({ article });
 });
 
+articlesRouter.delete('/:slug', requireAuth, (req, res) => {
+  const authReq = req as AuthRequest;
+  const user = findUserById(authReq.userId);
+  const articleIndex = articles.findIndex((item) => item.slug === req.params.slug);
+
+  if (!user) {
+    return res.status(404).json({
+      errors: {
+        body: ['User not found'],
+      },
+    });
+  }
+
+  if (articleIndex === -1) {
+    return res.status(404).json({
+      errors: {
+        body: ['Article not found'],
+      },
+    });
+  }
+
+  const article = articles[articleIndex];
+
+  if (!article) {
+    return res.status(404).json({
+      errors: {
+        body: ['Article not found'],
+      },
+    });
+  }
+
+  if (article.author.username !== user.username) {
+    return res.status(403).json({
+      errors: {
+        body: ['You can only delete your own articles'],
+      },
+    });
+  }
+
+  articles.splice(articleIndex, 1);
+
+  return res.sendStatus(204);
+});
+
 articlesRouter.get('/:slug/comments', (req, res) => {
   const article = articles.find((item) => item.slug === req.params.slug);
 
