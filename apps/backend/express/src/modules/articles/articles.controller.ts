@@ -50,12 +50,14 @@ const slugify = (title: string) => {
   );
 };
 
-const createSlug = (title: string) => {
+const createSlug = (title: string, currentSlug?: string) => {
   const baseSlug = slugify(title);
   let slug = baseSlug;
   let suffix = 2;
 
-  while (articles.some((article) => article.slug === slug)) {
+  while (
+    articles.some((article) => article.slug === slug && article.slug !== currentSlug)
+  ) {
     slug = `${baseSlug}-${suffix}`;
     suffix += 1;
   }
@@ -168,6 +170,104 @@ articlesRouter.get('/:slug', (req, res) => {
       },
     });
   }
+
+  return res.json({ article });
+});
+
+articlesRouter.put('/:slug', requireAuth, (req, res) => {
+  const authReq = req as AuthRequest;
+  const user = findUserById(authReq.userId);
+  const article = articles.find((item) => item.slug === req.params.slug);
+
+  if (!user) {
+    return res.status(404).json({
+      errors: {
+        body: ['User not found'],
+      },
+    });
+  }
+
+  if (!article) {
+    return res.status(404).json({
+      errors: {
+        body: ['Article not found'],
+      },
+    });
+  }
+
+  if (article.author.username !== user.username) {
+    return res.status(403).json({
+      errors: {
+        body: ['You can only edit your own articles'],
+      },
+    });
+  }
+
+  const title =
+    typeof req.body?.article?.title === 'string'
+      ? req.body.article.title.trim()
+      : undefined;
+  const description =
+    typeof req.body?.article?.description === 'string'
+      ? req.body.article.description.trim()
+      : undefined;
+  const body =
+    typeof req.body?.article?.body === 'string'
+      ? req.body.article.body.trim()
+      : undefined;
+  const tagList = Array.isArray(req.body?.article?.tagList)
+    ? req.body.article.tagList
+        .filter((tag: unknown) => typeof tag === 'string')
+        .map((tag: string) => tag.trim())
+        .filter(Boolean)
+    : undefined;
+
+  if (
+    title === undefined &&
+    description === undefined &&
+    body === undefined &&
+    tagList === undefined
+  ) {
+    return res.status(422).json({
+      errors: {
+        body: ['At least one article field is required'],
+      },
+    });
+  }
+
+  if (title !== undefined && !title) {
+    return res.status(422).json({
+      errors: {
+        body: ['Title cannot be empty'],
+      },
+    });
+  }
+
+  if (description !== undefined && !description) {
+    return res.status(422).json({
+      errors: {
+        body: ['Description cannot be empty'],
+      },
+    });
+  }
+
+  if (body !== undefined && !body) {
+    return res.status(422).json({
+      errors: {
+        body: ['Body cannot be empty'],
+      },
+    });
+  }
+
+  if (title !== undefined) {
+    article.title = title;
+    article.slug = createSlug(title, article.slug);
+  }
+  if (description !== undefined) article.description = description;
+  if (body !== undefined) article.body = body;
+  if (tagList !== undefined) article.tagList = tagList;
+
+  article.updatedAt = new Date().toISOString();
 
   return res.json({ article });
 });
