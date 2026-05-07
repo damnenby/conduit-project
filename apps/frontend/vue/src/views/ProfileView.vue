@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAuth } from '../composables/useAuth'
 
 type Profile = {
   username: string
@@ -10,6 +11,7 @@ type Profile = {
 }
 
 const route = useRoute()
+const { user } = useAuth()
 const profile = ref<Profile | null>(null)
 const errorMessage = ref('')
 
@@ -33,14 +35,25 @@ const fetchProfile = async () => {
 const toggleFollow = async () => {
   if (!profile.value) return
 
+  if (!user.value) {
+    errorMessage.value = 'Please login to follow authors.'
+    return
+  }
+
   const method = profile.value.following ? 'DELETE' : 'POST'
   const response = await fetch(`/api/profiles/${profile.value.username}/follow`, {
     method,
+    headers: {
+      Authorization: `Token ${user.value.token}`,
+    },
   })
   const data = await response.json()
 
   if (response.ok) {
     profile.value = data.profile
+    errorMessage.value = ''
+  } else {
+    errorMessage.value = data.errors?.body?.[0] ?? 'Could not update follow.'
   }
 }
 
