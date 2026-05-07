@@ -11,6 +11,10 @@ type StoredUser = User & { id: number; passwordHash: string };
 
 const users: StoredUser[] = [];
 
+export const findUserById = (id: number | undefined) => {
+  return users.find((item) => item.id === id);
+};
+
 const sendUser = (res: Response, user: User) => {
   return res.json({
     user: {

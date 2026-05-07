@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { Article, Comment } from '@common/model';
-import { requireAuth } from '../../middleware/auth';
+import { requireAuth, type AuthRequest } from '../../middleware/auth';
+import { findUserById } from '../users/users.controller';
 
 export const articlesRouter: Router = Router();
 
@@ -39,6 +40,29 @@ const comments: Comment[] = [
   },
 ];
 
+const slugify = (title: string) => {
+  return (
+    title
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || 'article'
+  );
+};
+
+const createSlug = (title: string) => {
+  const baseSlug = slugify(title);
+  let slug = baseSlug;
+  let suffix = 2;
+
+  while (articles.some((article) => article.slug === slug)) {
+    slug = `${baseSlug}-${suffix}`;
+    suffix += 1;
+  }
+
+  return slug;
+};
+
 articlesRouter.get('/', (req, res) => {
   const tag = req.query.tag?.toString();
   const author = req.query.author?.toString();
@@ -61,6 +85,68 @@ articlesRouter.get('/', (req, res) => {
     articles: filteredArticles,
     articlesCount: filteredArticles.length,
   });
+});
+
+articlesRouter.post('/', requireAuth, (req, res) => {
+  const authReq = req as AuthRequest;
+  const user = findUserById(authReq.userId);
+  const title =
+    typeof req.body?.article?.title === 'string'
+      ? req.body.article.title.trim()
+      : '';
+  const description =
+    typeof req.body?.article?.description === 'string'
+      ? req.body.article.description.trim()
+      : '';
+  const body =
+    typeof req.body?.article?.body === 'string'
+      ? req.body.article.body.trim()
+      : '';
+  const tagList = Array.isArray(req.body?.article?.tagList)
+    ? req.body.article.tagList
+        .filter((tag: unknown) => typeof tag === 'string')
+        .map((tag: string) => tag.trim())
+        .filter(Boolean)
+    : [];
+
+  if (!user) {
+    return res.status(404).json({
+      errors: {
+        body: ['User not found'],
+      },
+    });
+  }
+
+  if (!title || !description || !body) {
+    return res.status(422).json({
+      errors: {
+        body: ['Title, description and body are required'],
+      },
+    });
+  }
+
+  const now = new Date().toISOString();
+  const article: Article = {
+    slug: createSlug(title),
+    title,
+    description,
+    body,
+    tagList,
+    createdAt: now,
+    updatedAt: now,
+    favorited: false,
+    favoritesCount: 0,
+    author: {
+      username: user.username,
+      bio: user.bio,
+      image: user.image,
+      following: false,
+    },
+  };
+
+  articles.unshift(article);
+
+  return res.status(201).json({ article });
 });
 
 articlesRouter.get('/feed', requireAuth, (_req, res) => {
