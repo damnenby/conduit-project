@@ -5,6 +5,8 @@ import { findUserById } from '../users/users.controller';
 
 export const articlesRouter: Router = Router();
 
+type StoredComment = Comment & { articleSlug: string };
+
 const articles: Article[] = [
   {
     slug: 'first-conduit-article',
@@ -25,9 +27,10 @@ const articles: Article[] = [
   },
 ];
 
-const comments: Comment[] = [
+const comments: StoredComment[] = [
   {
     id: 1,
+    articleSlug: 'first-conduit-article',
     body: 'This is a first example comment.',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -327,7 +330,72 @@ articlesRouter.get('/:slug/comments', (req, res) => {
     });
   }
 
-  return res.json({ comments });
+  return res.json({
+    comments: comments
+      .filter((comment) => comment.articleSlug === article.slug)
+      .map(({ articleSlug: _articleSlug, ...comment }) => comment),
+  });
+});
+
+articlesRouter.post('/:slug/comments', requireAuth, (req, res) => {
+  const authReq = req as AuthRequest;
+  const user = findUserById(authReq.userId);
+  const article = articles.find((item) => item.slug === req.params.slug);
+  const body =
+    typeof req.body?.comment?.body === 'string'
+      ? req.body.comment.body.trim()
+      : '';
+
+  if (!user) {
+    return res.status(404).json({
+      errors: {
+        body: ['User not found'],
+      },
+    });
+  }
+
+  if (!article) {
+    return res.status(404).json({
+      errors: {
+        body: ['Article not found'],
+      },
+    });
+  }
+
+  if (!body) {
+    return res.status(422).json({
+      errors: {
+        body: ['Comment body is required'],
+      },
+    });
+  }
+
+  const now = new Date().toISOString();
+  const comment: StoredComment = {
+    id: comments.length + 1,
+    articleSlug: article.slug,
+    body,
+    createdAt: now,
+    updatedAt: now,
+    author: {
+      username: user.username,
+      bio: user.bio,
+      image: user.image,
+      following: false,
+    },
+  };
+
+  comments.unshift(comment);
+
+  return res.status(201).json({
+    comment: {
+      id: comment.id,
+      body: comment.body,
+      createdAt: comment.createdAt,
+      updatedAt: comment.updatedAt,
+      author: comment.author,
+    },
+  });
 });
 
 articlesRouter.post('/:slug/favorite', requireAuth, (req, res) => {
