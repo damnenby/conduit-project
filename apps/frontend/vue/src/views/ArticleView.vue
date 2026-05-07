@@ -30,6 +30,7 @@ const { user } = useAuth()
 const article = ref<Article | null>(null)
 const comments = ref<Comment[]>([])
 const errorMessage = ref('')
+const newComment = ref('')
 
 const isOwnArticle = computed(() => {
   return article.value?.author.username === user.value?.username
@@ -110,6 +111,44 @@ const deleteArticle = async () => {
   errorMessage.value = data.errors?.body?.[0] ?? 'Could not delete article.'
 }
 
+const postComment = async () => {
+  if (!article.value || !user.value) return
+
+  const commentBody = newComment.value.trim()
+
+  if (!commentBody) {
+    errorMessage.value = 'Comment body is required.'
+    return
+  }
+
+  try {
+    const response = await fetch(`/api/articles/${article.value.slug}/comments`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Token ${user.value.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        comment: {
+          body: commentBody,
+        },
+      }),
+    })
+    const data = await response.json()
+
+    if (!response.ok) {
+      errorMessage.value = data.errors?.body?.[0] ?? 'Could not post comment.'
+      return
+    }
+
+    comments.value = [data.comment, ...comments.value]
+    newComment.value = ''
+    errorMessage.value = ''
+  } catch {
+    errorMessage.value = 'Could not post comment.'
+  }
+}
+
 onMounted(() => {
   fetchArticle()
   fetchComments()
@@ -145,6 +184,18 @@ onMounted(() => {
 
   <section>
     <h2>Comments</h2>
+
+    <form v-if="user" @submit.prevent="postComment">
+      <label>
+        Add comment
+        <textarea v-model="newComment" rows="4"></textarea>
+      </label>
+      <button type="submit">Post comment</button>
+    </form>
+
+    <p v-else>
+      <RouterLink to="/login">Login</RouterLink> to comment.
+    </p>
 
     <ul>
       <li v-for="comment in comments" :key="comment.id">
