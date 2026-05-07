@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 
 type Article = {
@@ -25,10 +25,15 @@ type Comment = {
 }
 
 const route = useRoute()
+const router = useRouter()
 const { user } = useAuth()
 const article = ref<Article | null>(null)
 const comments = ref<Comment[]>([])
 const errorMessage = ref('')
+
+const isOwnArticle = computed(() => {
+  return article.value?.author.username === user.value?.username
+})
 
 const fetchArticle = async () => {
   try {
@@ -86,6 +91,25 @@ const toggleFavorite = async () => {
   }
 }
 
+const deleteArticle = async () => {
+  if (!article.value || !user.value) return
+
+  const response = await fetch(`/api/articles/${article.value.slug}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Token ${user.value.token}`,
+    },
+  })
+
+  if (response.ok) {
+    router.push('/')
+    return
+  }
+
+  const data = await response.json()
+  errorMessage.value = data.errors?.body?.[0] ?? 'Could not delete article.'
+}
+
 onMounted(() => {
   fetchArticle()
   fetchComments()
@@ -106,6 +130,8 @@ onMounted(() => {
     <button @click="toggleFavorite">
       {{ article.favorited ? 'Unfavorite' : 'Favorite' }}
     </button>
+
+    <button v-if="isOwnArticle" @click="deleteArticle">Delete article</button>
 
     <ul>
       <li v-for="tag in article.tagList" :key="tag">
