@@ -14,20 +14,44 @@ type Article = {
 }
 
 const articles = ref<Article[]>([])
+const tags = ref<string[]>([])
+const selectedTag = ref('')
 const errorMessage = ref('')
 
-const fetchArticles = async () => {
+const fetchArticles = async (tag = '') => {
   try {
-    const response = await fetch('/api/articles')
+    const url = tag ? `/api/articles?tag=${encodeURIComponent(tag)}` : '/api/articles'
+    const response = await fetch(url)
     const data = await response.json()
+
+    if (!response.ok) {
+      errorMessage.value = data.errors?.body?.[0] ?? 'Could not load articles.'
+      return
+    }
+
     articles.value = data.articles
+    selectedTag.value = tag
   } catch {
     errorMessage.value = 'Could not load articles.'
   }
 }
 
+const fetchTags = async () => {
+  try {
+    const response = await fetch('/api/tags')
+    const data = await response.json()
+
+    if (response.ok) {
+      tags.value = data.tags
+    }
+  } catch {
+    errorMessage.value = 'Could not load tags.'
+  }
+}
+
 onMounted(() => {
   fetchArticles()
+  fetchTags()
 })
 </script>
 
@@ -37,6 +61,20 @@ onMounted(() => {
     <p>A simple page for reading articles.</p>
 
     <p v-if="errorMessage">{{ errorMessage }}</p>
+
+    <aside>
+      <h2>Tags</h2>
+      <button type="button" @click="fetchArticles()">All</button>
+      <button
+        v-for="tag in tags"
+        :key="tag"
+        type="button"
+        @click="fetchArticles(tag)"
+      >
+        {{ tag }}
+      </button>
+      <p v-if="selectedTag">Showing tag: {{ selectedTag }}</p>
+    </aside>
 
     <ul>
       <li v-for="article in articles" :key="article.slug">
