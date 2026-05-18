@@ -77,6 +77,8 @@ export const listTags = () => {
 articlesRouter.get('/', (req, res) => {
   const tag = req.query.tag?.toString();
   const author = req.query.author?.toString();
+  const limit = Number(req.query.limit ?? 20);
+  const offset = Number(req.query.offset ?? 0);
 
   let filteredArticles = articles;
 
@@ -92,9 +94,13 @@ articlesRouter.get('/', (req, res) => {
     );
   }
 
+  const articlesCount = filteredArticles.length;
+  const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 20;
+  const safeOffset = Number.isFinite(offset) && offset > 0 ? offset : 0;
+
   return res.json({
-    articles: filteredArticles,
-    articlesCount: filteredArticles.length,
+    articles: filteredArticles.slice(safeOffset, safeOffset + safeLimit),
+    articlesCount,
   });
 });
 
