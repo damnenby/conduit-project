@@ -6,6 +6,7 @@ type Article = {
   slug: string
   title: string
   description: string
+  createdAt: string
   tagList: string[]
   favoritesCount: number
   author: {
@@ -17,6 +18,10 @@ const articles = ref<Article[]>([])
 const tags = ref<string[]>([])
 const selectedTag = ref('')
 const errorMessage = ref('')
+
+const formatDate = (date: string) => {
+  return new Date(date).toLocaleDateString()
+}
 
 const fetchArticles = async (tag = '') => {
   try {
@@ -90,6 +95,7 @@ onMounted(() => {
               {{ article.author.username }}
             </RouterLink>
           </p>
+          <p>Published: {{ formatDate(article.createdAt) }}</p>
           <p>{{ article.description }}</p>
           <p>Likes: {{ article.favoritesCount }}</p>
 

@@ -8,6 +8,8 @@ type Article = {
   title: string
   description: string
   body: string
+  createdAt: string
+  updatedAt: string
   tagList: string[]
   favorited: boolean
   favoritesCount: number
@@ -19,6 +21,7 @@ type Article = {
 type Comment = {
   id: number
   body: string
+  createdAt: string
   author: {
     username: string
   }
@@ -35,6 +38,10 @@ const newComment = ref('')
 const isOwnArticle = computed(() => {
   return article.value?.author.username === user.value?.username
 })
+
+const formatDate = (date: string) => {
+  return new Date(date).toLocaleDateString()
+}
 
 const fetchArticle = async () => {
   try {
@@ -184,6 +191,7 @@ onMounted(() => {
   <article v-if="article">
     <h1>{{ article.title }}</h1>
     <p>by {{ article.author.username }}</p>
+    <p>Published: {{ formatDate(article.createdAt) }}</p>
     <p>{{ article.description }}</p>
 
     <p>{{ article.body }}</p>
@@ -224,6 +232,7 @@ onMounted(() => {
       <li v-for="comment in comments" :key="comment.id">
         <p>{{ comment.body }}</p>
         <p>by {{ comment.author.username }}</p>
+        <p>{{ formatDate(comment.createdAt) }}</p>
         <button
           v-if="comment.author.username === user?.username"
           @click="deleteComment(comment.id)"
