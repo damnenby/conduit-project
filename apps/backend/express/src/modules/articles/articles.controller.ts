@@ -68,6 +68,12 @@ const createSlug = (title: string, currentSlug?: string) => {
   return slug;
 };
 
+export const listTags = () => {
+  return Array.from(
+    new Set(articles.flatMap((article) => article.tagList)),
+  ).sort();
+};
+
 articlesRouter.get('/', (req, res) => {
   const tag = req.query.tag?.toString();
   const author = req.query.author?.toString();

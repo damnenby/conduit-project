@@ -1,9 +1,8 @@
 import { Router } from 'express';
+import { listTags } from '../articles/articles.controller';
 
 export const tagsRouter: Router = Router();
 
-const tags = ['intro'];
-
 tagsRouter.get('/', (_req, res) => {
-  return res.json({ tags });
+  return res.json({ tags: listTags() });
 });
