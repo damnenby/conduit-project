@@ -74,6 +74,12 @@ export const listTags = () => {
   ).sort();
 };
 
+const sortNewestFirst = (items: Article[]) => {
+  return [...items].sort(
+    (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
+  );
+};
+
 articlesRouter.get('/', (req, res) => {
   const tag = req.query.tag?.toString();
   const author = req.query.author?.toString();
@@ -93,6 +99,8 @@ articlesRouter.get('/', (req, res) => {
       (article) => article.author.username === author,
     );
   }
+
+  filteredArticles = sortNewestFirst(filteredArticles);
 
   const articlesCount = filteredArticles.length;
   const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 20;
