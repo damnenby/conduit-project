@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { Profile } from '@common/model';
 import { prisma } from '../../db/prisma';
-import { requireAuth, type AuthRequest } from '../../middleware/auth';
+import { optionalAuth, requireAuth, type AuthRequest } from '../../middleware/auth';
 
 export const profilesRouter: Router = Router();
 
@@ -14,13 +14,31 @@ const profiles: Profile[] = [
   },
 ];
 
-profilesRouter.get('/:username', async (req, res) => {
+profilesRouter.get('/:username', optionalAuth, async (req, res) => {
+  const authReq = req as AuthRequest;
+  const currentUserId = authReq.userId;
   const username = String(req.params.username);
   const user = await prisma.user.findUnique({
     where: {
       username,
     },
   });
+
+  let following = false;
+
+  if (user && currentUserId) {
+    const follow = await prisma.follow.findUnique({
+      where: {
+        followerId_followingId: {
+          followerId: currentUserId,
+          followingId: user.id,
+        },
+      },
+    });
+
+    following = Boolean(follow);
+  }
+
   const profile =
     user === null
       ? profiles.find((item) => item.username === username)
@@ -28,7 +46,7 @@ profilesRouter.get('/:username', async (req, res) => {
           username: user.username,
           bio: user.bio,
           image: user.image,
-          following: false,
+          following,
         };
 
   if (!profile) {

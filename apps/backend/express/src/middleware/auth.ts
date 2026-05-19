@@ -40,3 +40,26 @@ export const requireAuth: RequestHandler = (req, res, next) => {
     });
   }
 };
+
+export const optionalAuth: RequestHandler = (req, _res, next) => {
+  const authHeader = req.header('authorization');
+  const token = authHeader?.startsWith('Token ')
+    ? authHeader.slice('Token '.length)
+    : '';
+
+  if (!token) {
+    return next();
+  }
+
+  try {
+    const userId = readToken(token);
+
+    if (userId) {
+      (req as AuthRequest).userId = userId;
+    }
+  } catch {
+    // Public routes still work if there is no valid login.
+  }
+
+  return next();
+};

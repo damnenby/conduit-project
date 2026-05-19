@@ -18,7 +18,8 @@ const errorMessage = ref('')
 const fetchProfile = async () => {
   try {
     const username = route.params.username?.toString()
-    const response = await fetch(`/api/profiles/${username}`)
+    const headers = user.value ? { Authorization: `Token ${user.value.token}` } : undefined
+    const response = await fetch(`/api/profiles/${username}`, { headers })
     const data = await response.json()
 
     if (!response.ok) {
