@@ -83,6 +83,7 @@ const sortNewestFirst = (items: Article[]) => {
 articlesRouter.get('/', (req, res) => {
   const tag = req.query.tag?.toString();
   const author = req.query.author?.toString();
+  const favorited = req.query.favorited?.toString();
   const limit = Number(req.query.limit ?? 20);
   const offset = Number(req.query.offset ?? 0);
 
@@ -98,6 +99,10 @@ articlesRouter.get('/', (req, res) => {
     filteredArticles = filteredArticles.filter(
       (article) => article.author.username === author,
     );
+  }
+
+  if (favorited) {
+    filteredArticles = filteredArticles.filter((article) => article.favorited);
   }
 
   filteredArticles = sortNewestFirst(filteredArticles);
