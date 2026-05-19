@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { Article, Comment } from '@common/model';
+import { prisma } from '../../db/prisma';
 import { requireAuth, type AuthRequest } from '../../middleware/auth';
 import { findUserById } from '../users/users.controller';
 
@@ -60,6 +61,22 @@ const createSlug = (title: string, currentSlug?: string) => {
 
   while (
     articles.some((article) => article.slug === slug && article.slug !== currentSlug)
+  ) {
+    slug = `${baseSlug}-${suffix}`;
+    suffix += 1;
+  }
+
+  return slug;
+};
+
+const createDatabaseSlug = async (title: string) => {
+  const baseSlug = slugify(title);
+  let slug = baseSlug;
+  let suffix = 2;
+
+  while (
+    articles.some((article) => article.slug === slug) ||
+    (await prisma.article.findUnique({ where: { slug } }))
   ) {
     slug = `${baseSlug}-${suffix}`;
     suffix += 1;
@@ -132,11 +149,15 @@ articlesRouter.post('/', requireAuth, async (req, res) => {
     typeof req.body?.article?.body === 'string'
       ? req.body.article.body.trim()
       : '';
-  const tagList = Array.isArray(req.body?.article?.tagList)
-    ? req.body.article.tagList
-        .filter((tag: unknown) => typeof tag === 'string')
-        .map((tag: string) => tag.trim())
-        .filter(Boolean)
+  const tagList: string[] = Array.isArray(req.body?.article?.tagList)
+    ? Array.from(
+        new Set(
+          req.body.article.tagList
+            .filter((tag: unknown): tag is string => typeof tag === 'string')
+            .map((tag: string) => tag.trim())
+            .filter(Boolean),
+        ),
+      )
     : [];
 
   if (!user) {
@@ -155,15 +176,34 @@ articlesRouter.post('/', requireAuth, async (req, res) => {
     });
   }
 
-  const now = new Date().toISOString();
+  const savedArticle = await prisma.article.create({
+    data: {
+      slug: await createDatabaseSlug(title),
+      title,
+      description,
+      body,
+      authorId: user.id,
+      tags: {
+        create: tagList.map((name) => ({
+          tag: {
+            connectOrCreate: {
+              where: { name },
+              create: { name },
+            },
+          },
+        })),
+      },
+    },
+  });
+
   const article: Article = {
-    slug: createSlug(title),
-    title,
-    description,
-    body,
+    slug: savedArticle.slug,
+    title: savedArticle.title,
+    description: savedArticle.description,
+    body: savedArticle.body,
     tagList,
-    createdAt: now,
-    updatedAt: now,
+    createdAt: savedArticle.createdAt.toISOString(),
+    updatedAt: savedArticle.updatedAt.toISOString(),
     favorited: false,
     favoritesCount: 0,
     author: {
