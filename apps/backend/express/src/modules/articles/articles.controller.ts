@@ -272,8 +272,23 @@ articlesRouter.get('/feed', requireAuth, (_req, res) => {
   });
 });
 
-articlesRouter.get('/:slug', (req, res) => {
-  const article = articles.find((item) => item.slug === req.params.slug);
+articlesRouter.get('/:slug', optionalAuth, async (req, res) => {
+  const authReq = req as AuthRequest;
+  const slug = String(req.params.slug);
+  const article = await prisma.article.findUnique({
+    where: {
+      slug,
+    },
+    include: {
+      author: true,
+      tags: {
+        include: {
+          tag: true,
+        },
+      },
+      favorites: true,
+    },
+  });
 
   if (!article) {
     return res.status(404).json({
@@ -283,7 +298,9 @@ articlesRouter.get('/:slug', (req, res) => {
     });
   }
 
-  return res.json({ article });
+  return res.json({
+    article: mapArticleFromDatabase(article, authReq.userId),
+  });
 });
 
 articlesRouter.put('/:slug', requireAuth, async (req, res) => {

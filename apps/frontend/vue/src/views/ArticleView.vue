@@ -46,7 +46,8 @@ const formatDate = (date: string) => {
 const fetchArticle = async () => {
   try {
     const slug = route.params.slug?.toString()
-    const response = await fetch(`/api/articles/${slug}`)
+    const headers = user.value ? { Authorization: `Token ${user.value.token}` } : undefined
+    const response = await fetch(`/api/articles/${slug}`, { headers })
     const data = await response.json()
 
     if (!response.ok) {
