@@ -1,12 +1,24 @@
 import { Router } from 'express';
 import type { Article, Comment } from '@common/model';
+import type { Prisma } from '@common/database';
 import { prisma } from '../../db/prisma';
-import { requireAuth, type AuthRequest } from '../../middleware/auth';
+import { optionalAuth, requireAuth, type AuthRequest } from '../../middleware/auth';
 import { findUserById } from '../users/users.controller';
 
 export const articlesRouter: Router = Router();
 
 type StoredComment = Comment & { articleSlug: string };
+type ArticleFromDatabase = Prisma.ArticleGetPayload<{
+  include: {
+    author: true;
+    tags: {
+      include: {
+        tag: true;
+      };
+    };
+    favorites: true;
+  };
+}>;
 
 const articles: Article[] = [
   {
@@ -97,39 +109,71 @@ const sortNewestFirst = (items: Article[]) => {
   );
 };
 
-articlesRouter.get('/', (req, res) => {
+const mapArticleFromDatabase = (
+  article: ArticleFromDatabase,
+  currentUserId?: number,
+): Article => {
+  return {
+    slug: article.slug,
+    title: article.title,
+    description: article.description,
+    body: article.body,
+    tagList: article.tags.map((articleTag) => articleTag.tag.name),
+    createdAt: article.createdAt.toISOString(),
+    updatedAt: article.updatedAt.toISOString(),
+    favorited: currentUserId
+      ? article.favorites.some((favorite) => favorite.userId === currentUserId)
+      : false,
+    favoritesCount: article.favorites.length,
+    author: {
+      username: article.author.username,
+      bio: article.author.bio,
+      image: article.author.image,
+      following: false,
+    },
+  };
+};
+
+articlesRouter.get('/', optionalAuth, async (req, res) => {
+  const authReq = req as AuthRequest;
   const tag = req.query.tag?.toString();
   const author = req.query.author?.toString();
   const favorited = req.query.favorited?.toString();
   const limit = Number(req.query.limit ?? 20);
   const offset = Number(req.query.offset ?? 0);
-
-  let filteredArticles = articles;
-
-  if (tag) {
-    filteredArticles = filteredArticles.filter((article) =>
-      article.tagList.includes(tag),
-    );
-  }
-
-  if (author) {
-    filteredArticles = filteredArticles.filter(
-      (article) => article.author.username === author,
-    );
-  }
-
-  if (favorited) {
-    filteredArticles = filteredArticles.filter((article) => article.favorited);
-  }
-
-  filteredArticles = sortNewestFirst(filteredArticles);
-
-  const articlesCount = filteredArticles.length;
   const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 20;
   const safeOffset = Number.isFinite(offset) && offset > 0 ? offset : 0;
+  const where: Prisma.ArticleWhereInput = {};
+
+  if (tag) where.tags = { some: { tag: { name: tag } } };
+  if (author) where.author = { username: author };
+  if (favorited) where.favorites = { some: { user: { username: favorited } } };
+
+  const [databaseArticles, articlesCount] = await Promise.all([
+    prisma.article.findMany({
+      where,
+      orderBy: {
+        createdAt: 'desc',
+      },
+      skip: safeOffset,
+      take: safeLimit,
+      include: {
+        author: true,
+        tags: {
+          include: {
+            tag: true,
+          },
+        },
+        favorites: true,
+      },
+    }),
+    prisma.article.count({ where }),
+  ]);
 
   return res.json({
-    articles: filteredArticles.slice(safeOffset, safeOffset + safeLimit),
+    articles: databaseArticles.map((article) =>
+      mapArticleFromDatabase(article, authReq.userId),
+    ),
     articlesCount,
   });
 });
