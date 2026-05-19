@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { Profile } from '@common/model';
 import { prisma } from '../../db/prisma';
-import { requireAuth } from '../../middleware/auth';
+import { requireAuth, type AuthRequest } from '../../middleware/auth';
 
 export const profilesRouter: Router = Router();
 
@@ -15,14 +15,15 @@ const profiles: Profile[] = [
 ];
 
 profilesRouter.get('/:username', async (req, res) => {
+  const username = String(req.params.username);
   const user = await prisma.user.findUnique({
     where: {
-      username: req.params.username,
+      username,
     },
   });
   const profile =
     user === null
-      ? profiles.find((item) => item.username === req.params.username)
+      ? profiles.find((item) => item.username === username)
       : {
           username: user.username,
           bio: user.bio,
@@ -41,8 +42,50 @@ profilesRouter.get('/:username', async (req, res) => {
   return res.json({ profile });
 });
 
-profilesRouter.post('/:username/follow', requireAuth, (req, res) => {
-  const profile = profiles.find((item) => item.username === req.params.username);
+profilesRouter.post('/:username/follow', requireAuth, async (req, res) => {
+  const authReq = req as AuthRequest;
+  const currentUserId = authReq.userId;
+  const username = String(req.params.username);
+  const user = await prisma.user.findUnique({
+    where: {
+      username,
+    },
+  });
+
+  if (user && user.id === currentUserId) {
+    return res.status(422).json({
+      errors: {
+        body: ['You cannot follow yourself'],
+      },
+    });
+  }
+
+  if (user && currentUserId) {
+    await prisma.follow.upsert({
+      where: {
+        followerId_followingId: {
+          followerId: currentUserId,
+          followingId: user.id,
+        },
+      },
+      update: {},
+      create: {
+        followerId: currentUserId,
+        followingId: user.id,
+      },
+    });
+
+    return res.json({
+      profile: {
+        username: user.username,
+        bio: user.bio,
+        image: user.image,
+        following: true,
+      },
+    });
+  }
+
+  const profile = profiles.find((item) => item.username === username);
 
   if (!profile) {
     return res.status(404).json({
@@ -57,8 +100,35 @@ profilesRouter.post('/:username/follow', requireAuth, (req, res) => {
   return res.json({ profile });
 });
 
-profilesRouter.delete('/:username/follow', requireAuth, (req, res) => {
-  const profile = profiles.find((item) => item.username === req.params.username);
+profilesRouter.delete('/:username/follow', requireAuth, async (req, res) => {
+  const authReq = req as AuthRequest;
+  const currentUserId = authReq.userId;
+  const username = String(req.params.username);
+  const user = await prisma.user.findUnique({
+    where: {
+      username,
+    },
+  });
+
+  if (user && currentUserId) {
+    await prisma.follow.deleteMany({
+      where: {
+        followerId: currentUserId,
+        followingId: user.id,
+      },
+    });
+
+    return res.json({
+      profile: {
+        username: user.username,
+        bio: user.bio,
+        image: user.image,
+        following: false,
+      },
+    });
+  }
+
+  const profile = profiles.find((item) => item.username === username);
 
   if (!profile) {
     return res.status(404).json({
