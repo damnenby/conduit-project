@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { Profile } from '@common/model';
+import { prisma } from '../../db/prisma';
 import { requireAuth } from '../../middleware/auth';
 
 export const profilesRouter: Router = Router();
@@ -13,8 +14,21 @@ const profiles: Profile[] = [
   },
 ];
 
-profilesRouter.get('/:username', (req, res) => {
-  const profile = profiles.find((item) => item.username === req.params.username);
+profilesRouter.get('/:username', async (req, res) => {
+  const user = await prisma.user.findUnique({
+    where: {
+      username: req.params.username,
+    },
+  });
+  const profile =
+    user === null
+      ? profiles.find((item) => item.username === req.params.username)
+      : {
+          username: user.username,
+          bio: user.bio,
+          image: user.image,
+          following: false,
+        };
 
   if (!profile) {
     return res.status(404).json({
