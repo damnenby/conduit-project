@@ -117,9 +117,9 @@ articlesRouter.get('/', (req, res) => {
   });
 });
 
-articlesRouter.post('/', requireAuth, (req, res) => {
+articlesRouter.post('/', requireAuth, async (req, res) => {
   const authReq = req as AuthRequest;
-  const user = findUserById(authReq.userId);
+  const user = await findUserById(authReq.userId);
   const title =
     typeof req.body?.article?.title === 'string'
       ? req.body.article.title.trim()
@@ -202,9 +202,9 @@ articlesRouter.get('/:slug', (req, res) => {
   return res.json({ article });
 });
 
-articlesRouter.put('/:slug', requireAuth, (req, res) => {
+articlesRouter.put('/:slug', requireAuth, async (req, res) => {
   const authReq = req as AuthRequest;
-  const user = findUserById(authReq.userId);
+  const user = await findUserById(authReq.userId);
   const article = articles.find((item) => item.slug === req.params.slug);
 
   if (!user) {
@@ -300,9 +300,9 @@ articlesRouter.put('/:slug', requireAuth, (req, res) => {
   return res.json({ article });
 });
 
-articlesRouter.delete('/:slug', requireAuth, (req, res) => {
+articlesRouter.delete('/:slug', requireAuth, async (req, res) => {
   const authReq = req as AuthRequest;
-  const user = findUserById(authReq.userId);
+  const user = await findUserById(authReq.userId);
   const articleIndex = articles.findIndex((item) => item.slug === req.params.slug);
 
   if (!user) {
@@ -362,9 +362,9 @@ articlesRouter.get('/:slug/comments', (req, res) => {
   });
 });
 
-articlesRouter.post('/:slug/comments', requireAuth, (req, res) => {
+articlesRouter.post('/:slug/comments', requireAuth, async (req, res) => {
   const authReq = req as AuthRequest;
-  const user = findUserById(authReq.userId);
+  const user = await findUserById(authReq.userId);
   const article = articles.find((item) => item.slug === req.params.slug);
   const body =
     typeof req.body?.comment?.body === 'string'
@@ -423,9 +423,9 @@ articlesRouter.post('/:slug/comments', requireAuth, (req, res) => {
   });
 });
 
-articlesRouter.delete('/:slug/comments/:id', requireAuth, (req, res) => {
+articlesRouter.delete('/:slug/comments/:id', requireAuth, async (req, res) => {
   const authReq = req as AuthRequest;
-  const user = findUserById(authReq.userId);
+  const user = await findUserById(authReq.userId);
   const article = articles.find((item) => item.slug === req.params.slug);
   const commentId = Number(req.params.id);
 

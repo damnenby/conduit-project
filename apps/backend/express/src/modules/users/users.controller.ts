@@ -1,5 +1,5 @@
 import { Router, type Response } from 'express';
-import type { User } from '@common/model';
+import { prisma } from '../../db/prisma';
 import { requireAuth, type AuthRequest } from '../../middleware/auth';
 import { createToken } from '../../utils/jwt';
 import { checkPassword, hashPassword } from '../../utils/password';
@@ -7,19 +7,28 @@ import { checkPassword, hashPassword } from '../../utils/password';
 export const usersRouter: Router = Router();
 export const currentUserRouter: Router = Router();
 
-type StoredUser = User & { id: number; passwordHash: string };
-
-const users: StoredUser[] = [];
-
-export const findUserById = (id: number | undefined) => {
-  return users.find((item) => item.id === id);
+type StoredUser = {
+  id: number;
+  email: string;
+  username: string;
+  bio: string | null;
+  image: string | null;
+  passwordHash: string;
 };
 
-const sendUser = (res: Response, user: User) => {
+export const findUserById = (id: number | undefined) => {
+  if (!id) return null;
+
+  return prisma.user.findUnique({
+    where: { id },
+  });
+};
+
+const sendUser = (res: Response, user: StoredUser) => {
   return res.json({
     user: {
       email: user.email,
-      token: user.token,
+      token: createToken(user.id),
       username: user.username,
       bio: user.bio,
       image: user.image,
@@ -48,7 +57,7 @@ usersRouter.post('/', async (req, res) => {
     });
   }
 
-  if (users.some((item) => item.email === email)) {
+  if (await prisma.user.findUnique({ where: { email } })) {
     return res.status(422).json({
       errors: {
         body: ['Email is already used'],
@@ -56,7 +65,7 @@ usersRouter.post('/', async (req, res) => {
     });
   }
 
-  if (users.some((item) => item.username === username)) {
+  if (await prisma.user.findUnique({ where: { username } })) {
     return res.status(422).json({
       errors: {
         body: ['Username is already used'],
@@ -64,26 +73,21 @@ usersRouter.post('/', async (req, res) => {
     });
   }
 
-  const id = users.length + 1;
   const passwordHash = await hashPassword(password);
-  const token = createToken(id);
-
-  const user = {
-    id,
-    email,
-    token,
-    username,
-    bio: null,
-    image: null,
-    passwordHash,
-  };
-
-  users.push(user);
+  const user = await prisma.user.create({
+    data: {
+      email,
+      username,
+      bio: null,
+      image: null,
+      passwordHash,
+    },
+  });
 
   return res.status(201).json({
     user: {
       email: user.email,
-      token: user.token,
+      token: createToken(user.id),
       username: user.username,
       bio: user.bio,
       image: user.image,
@@ -103,7 +107,9 @@ usersRouter.post('/login', async (req, res) => {
     });
   }
 
-  const user = users.find((item) => item.email === email);
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
 
   if (!user || !(await checkPassword(password, user.passwordHash))) {
     return res.status(401).json({
@@ -113,15 +119,12 @@ usersRouter.post('/login', async (req, res) => {
     });
   }
 
-  const token = createToken(user.id);
-  user.token = token;
-
   return sendUser(res, user);
 });
 
-currentUserRouter.get('/', requireAuth, (req, res) => {
+currentUserRouter.get('/', requireAuth, async (req, res) => {
   const authReq = req as AuthRequest;
-  const user = users.find((item) => item.id === authReq.userId);
+  const user = await findUserById(authReq.userId);
 
   if (!user) {
     return res.status(404).json({
@@ -136,7 +139,7 @@ currentUserRouter.get('/', requireAuth, (req, res) => {
 
 currentUserRouter.put('/', requireAuth, async (req, res) => {
   const authReq = req as AuthRequest;
-  const user = users.find((item) => item.id === authReq.userId);
+  const user = await findUserById(authReq.userId);
 
   if (!user) {
     return res.status(404).json({
@@ -190,7 +193,12 @@ currentUserRouter.put('/', requireAuth, async (req, res) => {
     });
   }
 
-  if (email !== undefined && users.some((item) => item.email === email && item.id !== user.id)) {
+  const existingEmailUser =
+    email !== undefined
+      ? await prisma.user.findUnique({ where: { email } })
+      : null;
+
+  if (existingEmailUser && existingEmailUser.id !== user.id) {
     return res.status(422).json({
       errors: {
         body: ['Email is already used'],
@@ -198,7 +206,12 @@ currentUserRouter.put('/', requireAuth, async (req, res) => {
     });
   }
 
-  if (username !== undefined && users.some((item) => item.username === username && item.id !== user.id)) {
+  const existingUsernameUser =
+    username !== undefined
+      ? await prisma.user.findUnique({ where: { username } })
+      : null;
+
+  if (existingUsernameUser && existingUsernameUser.id !== user.id) {
     return res.status(422).json({
       errors: {
         body: ['Username is already used'],
@@ -206,11 +219,24 @@ currentUserRouter.put('/', requireAuth, async (req, res) => {
     });
   }
 
-  if (email !== undefined) user.email = email;
-  if (username !== undefined) user.username = username;
-  if (bio !== undefined) user.bio = bio || null;
-  if (image !== undefined) user.image = image || null;
-  if (password !== undefined) user.passwordHash = await hashPassword(password);
+  const updateData: {
+    email?: string;
+    username?: string;
+    bio?: string | null;
+    image?: string | null;
+    passwordHash?: string;
+  } = {};
 
-  return sendUser(res, user);
+  if (email !== undefined) updateData.email = email;
+  if (username !== undefined) updateData.username = username;
+  if (bio !== undefined) updateData.bio = bio || null;
+  if (image !== undefined) updateData.image = image || null;
+  if (password !== undefined) updateData.passwordHash = await hashPassword(password);
+
+  const updatedUser = await prisma.user.update({
+    where: { id: user.id },
+    data: updateData,
+  });
+
+  return sendUser(res, updatedUser);
 });
