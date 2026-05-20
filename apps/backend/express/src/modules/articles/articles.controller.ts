@@ -81,14 +81,18 @@ const createSlug = (title: string, currentSlug?: string) => {
   return slug;
 };
 
-const createDatabaseSlug = async (title: string) => {
+const createDatabaseSlug = async (title: string, currentSlug?: string) => {
   const baseSlug = slugify(title);
   let slug = baseSlug;
   let suffix = 2;
 
   while (
-    articles.some((article) => article.slug === slug) ||
-    (await prisma.article.findUnique({ where: { slug } }))
+    articles.some((article) => article.slug === slug && article.slug !== currentSlug) ||
+    Boolean(
+      await prisma.article.findFirst({
+        where: currentSlug ? { slug, NOT: { slug: currentSlug } } : { slug },
+      }),
+    )
   ) {
     slug = `${baseSlug}-${suffix}`;
     suffix += 1;
@@ -306,7 +310,21 @@ articlesRouter.get('/:slug', optionalAuth, async (req, res) => {
 articlesRouter.put('/:slug', requireAuth, async (req, res) => {
   const authReq = req as AuthRequest;
   const user = await findUserById(authReq.userId);
-  const article = articles.find((item) => item.slug === req.params.slug);
+  const slug = String(req.params.slug);
+  const article = await prisma.article.findUnique({
+    where: {
+      slug,
+    },
+    include: {
+      author: true,
+      tags: {
+        include: {
+          tag: true,
+        },
+      },
+      favorites: true,
+    },
+  });
 
   if (!user) {
     return res.status(404).json({
@@ -324,7 +342,7 @@ articlesRouter.put('/:slug', requireAuth, async (req, res) => {
     });
   }
 
-  if (article.author.username !== user.username) {
+  if (article.authorId !== user.id) {
     return res.status(403).json({
       errors: {
         body: ['You can only edit your own articles'],
@@ -344,11 +362,15 @@ articlesRouter.put('/:slug', requireAuth, async (req, res) => {
     typeof req.body?.article?.body === 'string'
       ? req.body.article.body.trim()
       : undefined;
-  const tagList = Array.isArray(req.body?.article?.tagList)
-    ? req.body.article.tagList
-        .filter((tag: unknown) => typeof tag === 'string')
-        .map((tag: string) => tag.trim())
-        .filter(Boolean)
+  const tagList: string[] | undefined = Array.isArray(req.body?.article?.tagList)
+    ? Array.from(
+        new Set(
+          req.body.article.tagList
+            .filter((tag: unknown): tag is string => typeof tag === 'string')
+            .map((tag: string) => tag.trim())
+            .filter(Boolean),
+        ),
+      )
     : undefined;
 
   if (
@@ -388,17 +410,47 @@ articlesRouter.put('/:slug', requireAuth, async (req, res) => {
     });
   }
 
+  const updateData: Prisma.ArticleUpdateInput = {};
+
   if (title !== undefined) {
-    article.title = title;
-    article.slug = createSlug(title, article.slug);
+    updateData.title = title;
+    updateData.slug = await createDatabaseSlug(title, article.slug);
   }
-  if (description !== undefined) article.description = description;
-  if (body !== undefined) article.body = body;
-  if (tagList !== undefined) article.tagList = tagList;
+  if (description !== undefined) updateData.description = description;
+  if (body !== undefined) updateData.body = body;
+  if (tagList !== undefined) {
+    updateData.tags = {
+      deleteMany: {},
+      create: tagList.map((name) => ({
+        tag: {
+          connectOrCreate: {
+            where: { name },
+            create: { name },
+          },
+        },
+      })),
+    };
+  }
 
-  article.updatedAt = new Date().toISOString();
+  const updatedArticle = await prisma.article.update({
+    where: {
+      id: article.id,
+    },
+    data: updateData,
+    include: {
+      author: true,
+      tags: {
+        include: {
+          tag: true,
+        },
+      },
+      favorites: true,
+    },
+  });
 
-  return res.json({ article });
+  return res.json({
+    article: mapArticleFromDatabase(updatedArticle, user.id),
+  });
 });
 
 articlesRouter.delete('/:slug', requireAuth, async (req, res) => {
