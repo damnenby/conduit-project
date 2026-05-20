@@ -456,7 +456,12 @@ articlesRouter.put('/:slug', requireAuth, async (req, res) => {
 articlesRouter.delete('/:slug', requireAuth, async (req, res) => {
   const authReq = req as AuthRequest;
   const user = await findUserById(authReq.userId);
-  const articleIndex = articles.findIndex((item) => item.slug === req.params.slug);
+  const slug = String(req.params.slug);
+  const article = await prisma.article.findUnique({
+    where: {
+      slug,
+    },
+  });
 
   if (!user) {
     return res.status(404).json({
@@ -466,16 +471,6 @@ articlesRouter.delete('/:slug', requireAuth, async (req, res) => {
     });
   }
 
-  if (articleIndex === -1) {
-    return res.status(404).json({
-      errors: {
-        body: ['Article not found'],
-      },
-    });
-  }
-
-  const article = articles[articleIndex];
-
   if (!article) {
     return res.status(404).json({
       errors: {
@@ -484,7 +479,7 @@ articlesRouter.delete('/:slug', requireAuth, async (req, res) => {
     });
   }
 
-  if (article.author.username !== user.username) {
+  if (article.authorId !== user.id) {
     return res.status(403).json({
       errors: {
         body: ['You can only delete your own articles'],
@@ -492,7 +487,14 @@ articlesRouter.delete('/:slug', requireAuth, async (req, res) => {
     });
   }
 
-  articles.splice(articleIndex, 1);
+  await prisma.article.delete({
+    where: {
+      id: article.id,
+    },
+  });
+
+  const articleIndex = articles.findIndex((item) => item.slug === slug);
+  if (articleIndex !== -1) articles.splice(articleIndex, 1);
 
   return res.sendStatus(204);
 });
