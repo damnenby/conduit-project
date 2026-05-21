@@ -1,8 +1,14 @@
 import { Router } from 'express';
-import { listTags } from '../articles/articles.controller';
+import { prisma } from '../../db/prisma';
 
 export const tagsRouter: Router = Router();
 
-tagsRouter.get('/', (_req, res) => {
-  return res.json({ tags: listTags() });
+tagsRouter.get('/', async (_req, res) => {
+  const tags = await prisma.tag.findMany({
+    orderBy: {
+      name: 'asc',
+    },
+  });
+
+  return res.json({ tags: tags.map((tag) => tag.name) });
 });
