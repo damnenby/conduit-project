@@ -287,12 +287,58 @@ articlesRouter.post('/', requireAuth, async (req, res) => {
   return res.status(201).json({ article });
 });
 
-articlesRouter.get('/feed', requireAuth, (_req, res) => {
-  const feedArticles = articles.filter((article) => article.author.following);
+articlesRouter.get('/feed', requireAuth, async (req, res) => {
+  const authReq = req as AuthRequest;
+  const user = await findUserById(authReq.userId);
+  const limit = Number(req.query.limit ?? 20);
+  const offset = Number(req.query.offset ?? 0);
+  const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 20;
+  const safeOffset = Number.isFinite(offset) && offset > 0 ? offset : 0;
+
+  if (!user) {
+    return res.status(404).json({
+      errors: {
+        body: ['User not found'],
+      },
+    });
+  }
+
+  const where: Prisma.ArticleWhereInput = {
+    author: {
+      followers: {
+        some: {
+          followerId: user.id,
+        },
+      },
+    },
+  };
+
+  const [feedArticles, articlesCount] = await Promise.all([
+    prisma.article.findMany({
+      where,
+      orderBy: {
+        createdAt: 'desc',
+      },
+      skip: safeOffset,
+      take: safeLimit,
+      include: {
+        author: true,
+        tags: {
+          include: {
+            tag: true,
+          },
+        },
+        favorites: true,
+      },
+    }),
+    prisma.article.count({ where }),
+  ]);
 
   return res.json({
-    articles: feedArticles,
-    articlesCount: feedArticles.length,
+    articles: feedArticles.map((article) =>
+      mapArticleFromDatabase(article, user.id),
+    ),
+    articlesCount,
   });
 });
 
