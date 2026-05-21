@@ -555,7 +555,12 @@ articlesRouter.get('/:slug/comments', async (req, res) => {
 articlesRouter.post('/:slug/comments', requireAuth, async (req, res) => {
   const authReq = req as AuthRequest;
   const user = await findUserById(authReq.userId);
-  const article = articles.find((item) => item.slug === req.params.slug);
+  const slug = String(req.params.slug);
+  const article = await prisma.article.findUnique({
+    where: {
+      slug,
+    },
+  });
   const body =
     typeof req.body?.comment?.body === 'string'
       ? req.body.comment.body.trim()
@@ -585,31 +590,33 @@ articlesRouter.post('/:slug/comments', requireAuth, async (req, res) => {
     });
   }
 
-  const now = new Date().toISOString();
-  const comment: StoredComment = {
-    id: comments.length + 1,
-    articleSlug: article.slug,
+  const comment = await prisma.comment.create({
+    data: {
+      articleId: article.id,
+      authorId: user.id,
+      body,
+    },
+    include: {
+      author: true,
+    },
+  });
+
+  comments.unshift({
+    id: comment.id,
+    articleSlug: slug,
     body,
-    createdAt: now,
-    updatedAt: now,
+    createdAt: comment.createdAt.toISOString(),
+    updatedAt: comment.updatedAt.toISOString(),
     author: {
       username: user.username,
       bio: user.bio,
       image: user.image,
       following: false,
     },
-  };
-
-  comments.unshift(comment);
+  });
 
   return res.status(201).json({
-    comment: {
-      id: comment.id,
-      body: comment.body,
-      createdAt: comment.createdAt,
-      updatedAt: comment.updatedAt,
-      author: comment.author,
-    },
+    comment: mapCommentFromDatabase(comment),
   });
 });
 
