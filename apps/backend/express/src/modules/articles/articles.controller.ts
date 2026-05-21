@@ -623,13 +623,26 @@ articlesRouter.post('/:slug/comments', requireAuth, async (req, res) => {
 articlesRouter.delete('/:slug/comments/:id', requireAuth, async (req, res) => {
   const authReq = req as AuthRequest;
   const user = await findUserById(authReq.userId);
-  const article = articles.find((item) => item.slug === req.params.slug);
+  const slug = String(req.params.slug);
+  const article = await prisma.article.findUnique({
+    where: {
+      slug,
+    },
+  });
   const commentId = Number(req.params.id);
 
   if (!user) {
     return res.status(404).json({
       errors: {
         body: ['User not found'],
+      },
+    });
+  }
+
+  if (!Number.isInteger(commentId)) {
+    return res.status(404).json({
+      errors: {
+        body: ['Comment not found'],
       },
     });
   }
@@ -642,19 +655,12 @@ articlesRouter.delete('/:slug/comments/:id', requireAuth, async (req, res) => {
     });
   }
 
-  const commentIndex = comments.findIndex(
-    (comment) => comment.articleSlug === article.slug && comment.id === commentId,
-  );
-
-  if (commentIndex === -1) {
-    return res.status(404).json({
-      errors: {
-        body: ['Comment not found'],
-      },
-    });
-  }
-
-  const comment = comments[commentIndex];
+  const comment = await prisma.comment.findFirst({
+    where: {
+      id: commentId,
+      articleId: article.id,
+    },
+  });
 
   if (!comment) {
     return res.status(404).json({
@@ -664,7 +670,7 @@ articlesRouter.delete('/:slug/comments/:id', requireAuth, async (req, res) => {
     });
   }
 
-  if (comment.author.username !== user.username) {
+  if (comment.authorId !== user.id) {
     return res.status(403).json({
       errors: {
         body: ['You can only delete your own comments'],
@@ -672,7 +678,16 @@ articlesRouter.delete('/:slug/comments/:id', requireAuth, async (req, res) => {
     });
   }
 
-  comments.splice(commentIndex, 1);
+  await prisma.comment.delete({
+    where: {
+      id: comment.id,
+    },
+  });
+
+  const commentIndex = comments.findIndex(
+    (item) => item.articleSlug === slug && item.id === commentId,
+  );
+  if (commentIndex !== -1) comments.splice(commentIndex, 1);
 
   return res.sendStatus(204);
 });
