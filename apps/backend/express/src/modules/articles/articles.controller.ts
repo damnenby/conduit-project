@@ -766,8 +766,23 @@ articlesRouter.post('/:slug/favorite', requireAuth, async (req, res) => {
   });
 });
 
-articlesRouter.delete('/:slug/favorite', requireAuth, (req, res) => {
-  const article = articles.find((item) => item.slug === req.params.slug);
+articlesRouter.delete('/:slug/favorite', requireAuth, async (req, res) => {
+  const authReq = req as AuthRequest;
+  const user = await findUserById(authReq.userId);
+  const slug = String(req.params.slug);
+  const article = await prisma.article.findUnique({
+    where: {
+      slug,
+    },
+  });
+
+  if (!user) {
+    return res.status(404).json({
+      errors: {
+        body: ['User not found'],
+      },
+    });
+  }
 
   if (!article) {
     return res.status(404).json({
@@ -777,10 +792,43 @@ articlesRouter.delete('/:slug/favorite', requireAuth, (req, res) => {
     });
   }
 
-  if (article.favorited) {
-    article.favorited = false;
-    article.favoritesCount -= 1;
+  await prisma.favorite.deleteMany({
+    where: {
+      userId: user.id,
+      articleId: article.id,
+    },
+  });
+
+  const updatedArticle = await prisma.article.findUnique({
+    where: {
+      id: article.id,
+    },
+    include: {
+      author: true,
+      tags: {
+        include: {
+          tag: true,
+        },
+      },
+      favorites: true,
+    },
+  });
+
+  if (!updatedArticle) {
+    return res.status(404).json({
+      errors: {
+        body: ['Article not found'],
+      },
+    });
   }
 
-  return res.json({ article });
+  const oldArticle = articles.find((item) => item.slug === slug);
+  if (oldArticle && oldArticle.favorited) {
+    oldArticle.favorited = false;
+    oldArticle.favoritesCount -= 1;
+  }
+
+  return res.json({
+    article: mapArticleFromDatabase(updatedArticle, user.id),
+  });
 });
