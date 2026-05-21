@@ -19,6 +19,11 @@ type ArticleFromDatabase = Prisma.ArticleGetPayload<{
     favorites: true;
   };
 }>;
+type CommentFromDatabase = Prisma.CommentGetPayload<{
+  include: {
+    author: true;
+  };
+}>;
 
 const articles: Article[] = [
   {
@@ -133,6 +138,21 @@ const mapArticleFromDatabase = (
       username: article.author.username,
       bio: article.author.bio,
       image: article.author.image,
+      following: false,
+    },
+  };
+};
+
+const mapCommentFromDatabase = (comment: CommentFromDatabase): Comment => {
+  return {
+    id: comment.id,
+    body: comment.body,
+    createdAt: comment.createdAt.toISOString(),
+    updatedAt: comment.updatedAt.toISOString(),
+    author: {
+      username: comment.author.username,
+      bio: comment.author.bio,
+      image: comment.author.image,
       following: false,
     },
   };
@@ -499,8 +519,13 @@ articlesRouter.delete('/:slug', requireAuth, async (req, res) => {
   return res.sendStatus(204);
 });
 
-articlesRouter.get('/:slug/comments', (req, res) => {
-  const article = articles.find((item) => item.slug === req.params.slug);
+articlesRouter.get('/:slug/comments', async (req, res) => {
+  const slug = String(req.params.slug);
+  const article = await prisma.article.findUnique({
+    where: {
+      slug,
+    },
+  });
 
   if (!article) {
     return res.status(404).json({
@@ -510,10 +535,20 @@ articlesRouter.get('/:slug/comments', (req, res) => {
     });
   }
 
+  const databaseComments = await prisma.comment.findMany({
+    where: {
+      articleId: article.id,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+    include: {
+      author: true,
+    },
+  });
+
   return res.json({
-    comments: comments
-      .filter((comment) => comment.articleSlug === article.slug)
-      .map(({ articleSlug: _articleSlug, ...comment }) => comment),
+    comments: databaseComments.map(mapCommentFromDatabase),
   });
 });
 
