@@ -7,16 +7,22 @@ import { findUserById } from '../users/users.controller';
 
 export const articlesRouter: Router = Router();
 
+const articleInclude = {
+  author: {
+    include: {
+      followers: true,
+    },
+  },
+  tags: {
+    include: {
+      tag: true,
+    },
+  },
+  favorites: true,
+} satisfies Prisma.ArticleInclude;
+
 type ArticleFromDatabase = Prisma.ArticleGetPayload<{
-  include: {
-    author: true;
-    tags: {
-      include: {
-        tag: true;
-      };
-    };
-    favorites: true;
-  };
+  include: typeof articleInclude;
 }>;
 type CommentFromDatabase = Prisma.CommentGetPayload<{
   include: {
@@ -73,7 +79,11 @@ const mapArticleFromDatabase = (
       username: article.author.username,
       bio: article.author.bio,
       image: article.author.image,
-      following: false,
+      following: currentUserId
+        ? article.author.followers.some(
+            (follow) => follow.followerId === currentUserId,
+          )
+        : false,
     },
   };
 };
@@ -116,15 +126,7 @@ articlesRouter.get('/', optionalAuth, async (req, res) => {
       },
       skip: safeOffset,
       take: safeLimit,
-      include: {
-        author: true,
-        tags: {
-          include: {
-            tag: true,
-          },
-        },
-        favorites: true,
-      },
+      include: articleInclude,
     }),
     prisma.article.count({ where }),
   ]);
@@ -254,15 +256,7 @@ articlesRouter.get('/feed', requireAuth, async (req, res) => {
       },
       skip: safeOffset,
       take: safeLimit,
-      include: {
-        author: true,
-        tags: {
-          include: {
-            tag: true,
-          },
-        },
-        favorites: true,
-      },
+      include: articleInclude,
     }),
     prisma.article.count({ where }),
   ]);
@@ -282,15 +276,7 @@ articlesRouter.get('/:slug', optionalAuth, async (req, res) => {
     where: {
       slug,
     },
-    include: {
-      author: true,
-      tags: {
-        include: {
-          tag: true,
-        },
-      },
-      favorites: true,
-    },
+    include: articleInclude,
   });
 
   if (!article) {
@@ -314,15 +300,7 @@ articlesRouter.put('/:slug', requireAuth, async (req, res) => {
     where: {
       slug,
     },
-    include: {
-      author: true,
-      tags: {
-        include: {
-          tag: true,
-        },
-      },
-      favorites: true,
-    },
+    include: articleInclude,
   });
 
   if (!user) {
@@ -436,15 +414,7 @@ articlesRouter.put('/:slug', requireAuth, async (req, res) => {
       id: article.id,
     },
     data: updateData,
-    include: {
-      author: true,
-      tags: {
-        include: {
-          tag: true,
-        },
-      },
-      favorites: true,
-    },
+    include: articleInclude,
   });
 
   return res.json({
@@ -693,15 +663,7 @@ articlesRouter.post('/:slug/favorite', requireAuth, async (req, res) => {
     where: {
       id: article.id,
     },
-    include: {
-      author: true,
-      tags: {
-        include: {
-          tag: true,
-        },
-      },
-      favorites: true,
-    },
+    include: articleInclude,
   });
 
   if (!updatedArticle) {
@@ -754,15 +716,7 @@ articlesRouter.delete('/:slug/favorite', requireAuth, async (req, res) => {
     where: {
       id: article.id,
     },
-    include: {
-      author: true,
-      tags: {
-        include: {
-          tag: true,
-        },
-      },
-      favorites: true,
-    },
+    include: articleInclude,
   });
 
   if (!updatedArticle) {
