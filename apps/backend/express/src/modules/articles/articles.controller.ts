@@ -7,7 +7,6 @@ import { findUserById } from '../users/users.controller';
 
 export const articlesRouter: Router = Router();
 
-type StoredComment = Comment & { articleSlug: string };
 type ArticleFromDatabase = Prisma.ArticleGetPayload<{
   include: {
     author: true;
@@ -25,42 +24,6 @@ type CommentFromDatabase = Prisma.CommentGetPayload<{
   };
 }>;
 
-const articles: Article[] = [
-  {
-    slug: 'first-conduit-article',
-    title: 'First Conduit Article',
-    description: 'This is a first example article.',
-    body: 'This article is here for testing the new articles endpoint.',
-    tagList: ['intro'],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    favorited: false,
-    favoritesCount: 0,
-    author: {
-      username: 'demo',
-      bio: null,
-      image: null,
-      following: false,
-    },
-  },
-];
-
-const comments: StoredComment[] = [
-  {
-    id: 1,
-    articleSlug: 'first-conduit-article',
-    body: 'This is a first example comment.',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    author: {
-      username: 'demo',
-      bio: null,
-      image: null,
-      following: false,
-    },
-  },
-];
-
 const slugify = (title: string) => {
   return (
     title
@@ -71,28 +34,12 @@ const slugify = (title: string) => {
   );
 };
 
-const createSlug = (title: string, currentSlug?: string) => {
-  const baseSlug = slugify(title);
-  let slug = baseSlug;
-  let suffix = 2;
-
-  while (
-    articles.some((article) => article.slug === slug && article.slug !== currentSlug)
-  ) {
-    slug = `${baseSlug}-${suffix}`;
-    suffix += 1;
-  }
-
-  return slug;
-};
-
 const createDatabaseSlug = async (title: string, currentSlug?: string) => {
   const baseSlug = slugify(title);
   let slug = baseSlug;
   let suffix = 2;
 
   while (
-    articles.some((article) => article.slug === slug && article.slug !== currentSlug) ||
     Boolean(
       await prisma.article.findFirst({
         where: currentSlug ? { slug, NOT: { slug: currentSlug } } : { slug },
@@ -104,18 +51,6 @@ const createDatabaseSlug = async (title: string, currentSlug?: string) => {
   }
 
   return slug;
-};
-
-export const listTags = () => {
-  return Array.from(
-    new Set(articles.flatMap((article) => article.tagList)),
-  ).sort();
-};
-
-const sortNewestFirst = (items: Article[]) => {
-  return [...items].sort(
-    (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
-  );
 };
 
 const mapArticleFromDatabase = (
@@ -281,8 +216,6 @@ articlesRouter.post('/', requireAuth, async (req, res) => {
       following: false,
     },
   };
-
-  articles.unshift(article);
 
   return res.status(201).json({ article });
 });
@@ -559,9 +492,6 @@ articlesRouter.delete('/:slug', requireAuth, async (req, res) => {
     },
   });
 
-  const articleIndex = articles.findIndex((item) => item.slug === slug);
-  if (articleIndex !== -1) articles.splice(articleIndex, 1);
-
   return res.sendStatus(204);
 });
 
@@ -647,20 +577,6 @@ articlesRouter.post('/:slug/comments', requireAuth, async (req, res) => {
     },
   });
 
-  comments.unshift({
-    id: comment.id,
-    articleSlug: slug,
-    body,
-    createdAt: comment.createdAt.toISOString(),
-    updatedAt: comment.updatedAt.toISOString(),
-    author: {
-      username: user.username,
-      bio: user.bio,
-      image: user.image,
-      following: false,
-    },
-  });
-
   return res.status(201).json({
     comment: mapCommentFromDatabase(comment),
   });
@@ -730,11 +646,6 @@ articlesRouter.delete('/:slug/comments/:id', requireAuth, async (req, res) => {
     },
   });
 
-  const commentIndex = comments.findIndex(
-    (item) => item.articleSlug === slug && item.id === commentId,
-  );
-  if (commentIndex !== -1) comments.splice(commentIndex, 1);
-
   return res.sendStatus(204);
 });
 
@@ -801,12 +712,6 @@ articlesRouter.post('/:slug/favorite', requireAuth, async (req, res) => {
     });
   }
 
-  const oldArticle = articles.find((item) => item.slug === slug);
-  if (oldArticle && !oldArticle.favorited) {
-    oldArticle.favorited = true;
-    oldArticle.favoritesCount += 1;
-  }
-
   return res.json({
     article: mapArticleFromDatabase(updatedArticle, user.id),
   });
@@ -866,12 +771,6 @@ articlesRouter.delete('/:slug/favorite', requireAuth, async (req, res) => {
         body: ['Article not found'],
       },
     });
-  }
-
-  const oldArticle = articles.find((item) => item.slug === slug);
-  if (oldArticle && oldArticle.favorited) {
-    oldArticle.favorited = false;
-    oldArticle.favoritesCount -= 1;
   }
 
   return res.json({
