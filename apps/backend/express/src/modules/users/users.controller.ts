@@ -37,9 +37,16 @@ const sendUser = (res: Response, user: StoredUser) => {
 };
 
 usersRouter.post('/', async (req, res) => {
-  const username = req.body?.user?.username;
-  const email = req.body?.user?.email;
-  const password = req.body?.user?.password;
+  const username =
+    typeof req.body?.user?.username === 'string'
+      ? req.body.user.username.trim()
+      : '';
+  const email =
+    typeof req.body?.user?.email === 'string'
+      ? req.body.user.email.trim().toLowerCase()
+      : '';
+  const password =
+    typeof req.body?.user?.password === 'string' ? req.body.user.password : '';
 
   if (!username || !email || !password) {
     return res.status(422).json({
@@ -96,8 +103,12 @@ usersRouter.post('/', async (req, res) => {
 });
 
 usersRouter.post('/login', async (req, res) => {
-  const email = req.body?.user?.email;
-  const password = req.body?.user?.password;
+  const email =
+    typeof req.body?.user?.email === 'string'
+      ? req.body.user.email.trim().toLowerCase()
+      : '';
+  const password =
+    typeof req.body?.user?.password === 'string' ? req.body.user.password : '';
 
   if (!email || !password) {
     return res.status(422).json({
@@ -149,18 +160,18 @@ currentUserRouter.put('/', requireAuth, async (req, res) => {
     });
   }
 
-  const username = req.body?.user?.username;
-  const email = req.body?.user?.email;
-  const password = req.body?.user?.password;
-  const bio = req.body?.user?.bio;
-  const image = req.body?.user?.image;
+  const usernameInput = req.body?.user?.username;
+  const emailInput = req.body?.user?.email;
+  const passwordInput = req.body?.user?.password;
+  const bioInput = req.body?.user?.bio;
+  const imageInput = req.body?.user?.image;
 
   if (
-    username === undefined &&
-    email === undefined &&
-    password === undefined &&
-    bio === undefined &&
-    image === undefined
+    usernameInput === undefined &&
+    emailInput === undefined &&
+    passwordInput === undefined &&
+    bioInput === undefined &&
+    imageInput === undefined
   ) {
     return res.status(422).json({
       errors: {
@@ -168,6 +179,63 @@ currentUserRouter.put('/', requireAuth, async (req, res) => {
       },
     });
   }
+
+  if (emailInput !== undefined && typeof emailInput !== 'string') {
+    return res.status(422).json({
+      errors: {
+        body: ['Email must be text'],
+      },
+    });
+  }
+
+  if (usernameInput !== undefined && typeof usernameInput !== 'string') {
+    return res.status(422).json({
+      errors: {
+        body: ['Username must be text'],
+      },
+    });
+  }
+
+  if (passwordInput !== undefined && typeof passwordInput !== 'string') {
+    return res.status(422).json({
+      errors: {
+        body: ['Password must be text'],
+      },
+    });
+  }
+
+  if (
+    bioInput !== undefined &&
+    bioInput !== null &&
+    typeof bioInput !== 'string'
+  ) {
+    return res.status(422).json({
+      errors: {
+        body: ['Bio must be text'],
+      },
+    });
+  }
+
+  if (
+    imageInput !== undefined &&
+    imageInput !== null &&
+    typeof imageInput !== 'string'
+  ) {
+    return res.status(422).json({
+      errors: {
+        body: ['Image must be text'],
+      },
+    });
+  }
+
+  const email =
+    emailInput !== undefined ? emailInput.trim().toLowerCase() : undefined;
+  const username =
+    usernameInput !== undefined ? usernameInput.trim() : undefined;
+  const password = passwordInput;
+  const bio = bioInput === undefined ? undefined : bioInput?.trim() || null;
+  const image =
+    imageInput === undefined ? undefined : imageInput?.trim() || null;
 
   if (email !== undefined && !email) {
     return res.status(422).json({
