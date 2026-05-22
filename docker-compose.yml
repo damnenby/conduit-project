@@ -1,0 +1,31 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/express/Dockerfile
+    environment:
+      DATABASE_URL: file:/data/dev.db
+      JWT_SECRET: conduit-dev-secret
+    ports:
+      - "3000:3000"
+    volumes:
+      - conduit-data:/data
+    command: >
+      sh -c "cd libs/database/sqlite
+      && pnpm exec prisma migrate deploy --config prisma.config.ts
+      && cd /app
+      && pnpm --filter express start"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/vue/Dockerfile
+    environment:
+      VITE_API_PROXY_TARGET: http://backend:3000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  conduit-data:
