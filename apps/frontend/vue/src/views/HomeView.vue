@@ -81,7 +81,9 @@ onMounted(() => {
       <p v-if="selectedTag">Showing tag: {{ selectedTag }}</p>
     </aside>
 
-    <ul>
+    <p v-if="articles.length === 0">No articles yet.</p>
+
+    <ul v-else>
       <li v-for="article in articles" :key="article.slug">
         <article>
           <h2>

@@ -7,6 +7,9 @@ type Article = {
   slug: string
   title: string
   description: string
+  createdAt: string
+  tagList: string[]
+  favoritesCount: number
   author: {
     username: string
   }
@@ -15,6 +18,10 @@ type Article = {
 const articles = ref<Article[]>([])
 const errorMessage = ref('')
 const { user } = useAuth()
+
+const formatDate = (date: string) => {
+  return new Date(date).toLocaleDateString()
+}
 
 const fetchFeed = async () => {
   if (!user.value) return
@@ -59,8 +66,21 @@ onMounted(() => {
               {{ article.title }}
             </RouterLink>
           </h2>
-          <p>by {{ article.author.username }}</p>
+          <p>
+            by
+            <RouterLink :to="`/profiles/${article.author.username}`">
+              {{ article.author.username }}
+            </RouterLink>
+          </p>
+          <p>Published: {{ formatDate(article.createdAt) }}</p>
           <p>{{ article.description }}</p>
+          <p>Likes: {{ article.favoritesCount }}</p>
+
+          <ul>
+            <li v-for="tag in article.tagList" :key="tag">
+              {{ tag }}
+            </li>
+          </ul>
         </article>
       </li>
     </ul>

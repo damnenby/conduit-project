@@ -200,7 +200,7 @@ onMounted(() => {
     <p>Published: {{ formatDate(article.createdAt) }}</p>
     <p>{{ article.description }}</p>
 
-    <p>{{ article.body }}</p>
+    <p class="article-body">{{ article.body }}</p>
 
     <p>Likes: {{ article.favoritesCount }}</p>
     <button @click="toggleFavorite">

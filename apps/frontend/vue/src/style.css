@@ -46,6 +46,10 @@ textarea {
   overflow-wrap: anywhere;
 }
 
+.article-body {
+  white-space: pre-wrap;
+}
+
 ul {
   padding-left: 20px;
 }
