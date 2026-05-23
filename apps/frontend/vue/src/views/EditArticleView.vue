@@ -95,6 +95,36 @@ const updateArticle = async () => {
   }
 }
 
+const deleteArticle = async () => {
+  if (!article.value || !user.value) return
+
+  errorMessage.value = ''
+
+  if (article.value.author.username !== user.value.username) {
+    errorMessage.value = 'You can only delete your own articles.'
+    return
+  }
+
+  try {
+    const response = await fetch(`/api/articles/${article.value.slug}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Token ${user.value.token}`,
+      },
+    })
+
+    if (response.ok) {
+      router.push('/')
+      return
+    }
+
+    const data = await response.json()
+    errorMessage.value = data.errors?.body?.[0] ?? 'Could not delete article.'
+  } catch {
+    errorMessage.value = 'Could not delete article.'
+  }
+}
+
 onMounted(() => {
   loadArticle()
 })
@@ -128,6 +158,7 @@ onMounted(() => {
       </label>
 
       <button type="submit">Update article</button>
+      <button type="button" @click="deleteArticle">Delete article</button>
     </form>
   </section>
 </template>
