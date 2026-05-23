@@ -17,6 +17,9 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
+      meta: {
+        title: 'Home',
+      },
     },
     {
       path: '/feed',
@@ -24,6 +27,7 @@ const router = createRouter({
       component: FeedView,
       meta: {
         requiresAuth: true,
+        title: 'Feed',
       },
     },
     {
@@ -32,6 +36,7 @@ const router = createRouter({
       component: NewArticleView,
       meta: {
         requiresAuth: true,
+        title: 'New Article',
       },
     },
     {
@@ -40,27 +45,40 @@ const router = createRouter({
       component: EditArticleView,
       meta: {
         requiresAuth: true,
+        title: 'Edit Article',
       },
     },
     {
       path: '/articles/:slug',
       name: 'article',
       component: ArticleView,
+      meta: {
+        title: 'Article',
+      },
     },
     {
       path: '/register',
       name: 'register',
       component: RegisterView,
+      meta: {
+        title: 'Register',
+      },
     },
     {
       path: '/login',
       name: 'login',
       component: LoginView,
+      meta: {
+        title: 'Login',
+      },
     },
     {
       path: '/profiles/:username',
       name: 'profile',
       component: ProfileView,
+      meta: {
+        title: 'Profile',
+      },
     },
     {
       path: '/settings',
@@ -68,6 +86,7 @@ const router = createRouter({
       component: SettingsView,
       meta: {
         requiresAuth: true,
+        title: 'Settings',
       },
     },
   ],
@@ -79,6 +98,11 @@ router.beforeEach((to) => {
   if (to.meta.requiresAuth && !isLoggedIn.value) {
     return { name: 'login' }
   }
+})
+
+router.afterEach((to) => {
+  const title = typeof to.meta.title === 'string' ? to.meta.title : ''
+  document.title = title ? `${title} | Conduit` : 'Conduit'
 })
 
 export default router

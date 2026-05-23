@@ -2,9 +2,9 @@
   <header>
     <nav>
       <RouterLink to="/">Conduit</RouterLink>
-      <RouterLink to="/feed">Feed</RouterLink>
 
       <template v-if="isLoggedIn">
+        <RouterLink to="/feed">Feed</RouterLink>
         <RouterLink to="/editor">New Article</RouterLink>
         <RouterLink to="/settings">Settings</RouterLink>
         <span>{{ user?.username }}</span>

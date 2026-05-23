@@ -18,12 +18,16 @@ const articles = ref<Article[]>([])
 const tags = ref<string[]>([])
 const selectedTag = ref('')
 const errorMessage = ref('')
+const loading = ref(false)
 
 const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString()
 }
 
 const fetchArticles = async (tag = '') => {
+  loading.value = true
+  errorMessage.value = ''
+
   try {
     const url = tag ? `/api/articles?tag=${encodeURIComponent(tag)}` : '/api/articles'
     const response = await fetch(url)
@@ -38,6 +42,8 @@ const fetchArticles = async (tag = '') => {
     selectedTag.value = tag
   } catch {
     errorMessage.value = 'Could not load articles.'
+  } finally {
+    loading.value = false
   }
 }
 
@@ -81,7 +87,8 @@ onMounted(() => {
       <p v-if="selectedTag">Showing tag: {{ selectedTag }}</p>
     </aside>
 
-    <p v-if="articles.length === 0">No articles yet.</p>
+    <p v-if="loading">Loading articles...</p>
+    <p v-else-if="articles.length === 0">No articles yet.</p>
 
     <ul v-else>
       <li v-for="article in articles" :key="article.slug">

@@ -108,7 +108,7 @@ onMounted(() => {
       <h1>{{ profile.username }}</h1>
       <p>{{ profile.bio ?? 'No bio yet.' }}</p>
       <p>Following: {{ profile.following ? 'yes' : 'no' }}</p>
-      <button @click="toggleFollow">
+      <button v-if="user?.username !== profile.username" @click="toggleFollow">
         {{ profile.following ? 'Unfollow' : 'Follow' }}
       </button>
     </div>

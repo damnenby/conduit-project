@@ -1,4 +1,8 @@
-import Express from 'express';
+import Express, {
+  type NextFunction,
+  type Request,
+  type Response,
+} from 'express';
 import bodyParser from 'body-parser';
 import { articlesRouter } from './modules/articles/articles.controller';
 import { profilesRouter } from './modules/profiles/profiles.controller';
@@ -25,6 +29,16 @@ app.use('/api/profiles', profilesRouter);
 app.use('/api/tags', tagsRouter);
 app.use('/api/user', currentUserRouter);
 app.use('/api/users', usersRouter);
+
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(err);
+
+  return res.status(500).json({
+    errors: {
+      body: ['Internal server error'],
+    },
+  });
+});
 
 // Init server
 app.listen(PORT, () => {
