@@ -191,7 +191,12 @@ onMounted(() => {
 
   <article v-if="article">
     <h1>{{ article.title }}</h1>
-    <p>by {{ article.author.username }}</p>
+    <p>
+      by
+      <RouterLink :to="`/profiles/${article.author.username}`">
+        {{ article.author.username }}
+      </RouterLink>
+    </p>
     <p>Published: {{ formatDate(article.createdAt) }}</p>
     <p>{{ article.description }}</p>
 
@@ -232,7 +237,12 @@ onMounted(() => {
     <ul>
       <li v-for="comment in comments" :key="comment.id">
         <p>{{ comment.body }}</p>
-        <p>by {{ comment.author.username }}</p>
+        <p>
+          by
+          <RouterLink :to="`/profiles/${comment.author.username}`">
+            {{ comment.author.username }}
+          </RouterLink>
+        </p>
         <p>{{ formatDate(comment.createdAt) }}</p>
         <button
           v-if="comment.author.username === user?.username"
