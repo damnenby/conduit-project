@@ -7,7 +7,9 @@
         <RouterLink to="/feed">Feed</RouterLink>
         <RouterLink to="/editor">New Article</RouterLink>
         <RouterLink to="/settings">Settings</RouterLink>
-        <span>{{ user?.username }}</span>
+        <RouterLink v-if="user" :to="`/profiles/${user.username}`">
+          {{ user.username }}
+        </RouterLink>
         <button @click="logout">Logout</button>
       </template>
 

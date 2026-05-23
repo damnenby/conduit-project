@@ -5,6 +5,11 @@ export const tagsRouter: Router = Router();
 
 tagsRouter.get('/', async (_req, res) => {
   const tags = await prisma.tag.findMany({
+    where: {
+      articles: {
+        some: {},
+      },
+    },
     orderBy: {
       name: 'asc',
     },

@@ -36,6 +36,11 @@ const loadArticle = async () => {
       return
     }
 
+    if (data.article.author.username !== user.value?.username) {
+      router.replace(`/articles/${data.article.slug}`)
+      return
+    }
+
     article.value = data.article
     title.value = data.article.title
     description.value = data.article.description
