@@ -7,9 +7,20 @@ services:
       DATABASE_URL: file:/data/dev.db
       JWT_SECRET: conduit-dev-secret
     ports:
-      - "3000:3000"
+      - '3000:3000'
     volumes:
       - conduit-data:/data
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:3000/api/health').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     command: >
       sh -c "cd libs/database/sqlite
       && pnpm exec prisma migrate deploy --config prisma.config.ts
@@ -23,9 +34,10 @@ services:
     environment:
       VITE_API_PROXY_TARGET: http://backend:3000
     ports:
-      - "5173:5173"
+      - '5173:5173'
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   conduit-data:

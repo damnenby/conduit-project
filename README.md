@@ -11,6 +11,14 @@ Install packages:
 pnpm install
 ```
 
+Prepare the local SQLite database:
+
+```bash
+cd libs/database/sqlite
+DATABASE_URL=file:./dev.db pnpm exec prisma migrate dev --config prisma.config.ts
+cd ../../..
+```
+
 Start backend:
 
 ```bash
@@ -35,4 +43,4 @@ Backend: http://localhost:3000
 ## Status
 
 Implemented: auth, articles, comments, likes, profiles, following, feed, tags
-and Docker setup.
+pagination and Docker setup.
