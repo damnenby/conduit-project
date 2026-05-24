@@ -6,8 +6,6 @@
   "scripts": {
     "start:express": "pnpm --filter 'express' start",
     "build:express": "pnpm --filter 'express' build",
-    "start:nest": "pnpm --filter 'nest' start:dev",
-    "build:nest": "pnpm --filter 'nest' build",
     "start:vue": "pnpm --filter 'vue' dev",
     "build:vue": "pnpm --filter 'vue' build"
   },
@@ -16,7 +14,6 @@
   "license": "ISC",
   "packageManager": "pnpm@10.33.0",
   "devDependencies": {
-    "@nestjs/cli": "^11.0.19",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.12.2",
     "eslint": "^10.2.0",

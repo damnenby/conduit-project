@@ -201,25 +201,24 @@ articlesRouter.post('/', requireAuth, async (req, res) => {
     },
   });
 
-  const article: Article = {
-    slug: savedArticle.slug,
-    title: savedArticle.title,
-    description: savedArticle.description,
-    body: savedArticle.body,
-    tagList,
-    createdAt: savedArticle.createdAt.toISOString(),
-    updatedAt: savedArticle.updatedAt.toISOString(),
-    favorited: false,
-    favoritesCount: 0,
-    author: {
-      username: user.username,
-      bio: user.bio,
-      image: user.image,
-      following: false,
+  const article = await prisma.article.findUnique({
+    where: {
+      id: savedArticle.id,
     },
-  };
+    include: articleInclude,
+  });
 
-  return res.status(201).json({ article });
+  if (!article) {
+    return res.status(404).json({
+      errors: {
+        body: ['Article not found'],
+      },
+    });
+  }
+
+  return res.status(201).json({
+    article: mapArticleFromDatabase(article, user.id),
+  });
 });
 
 articlesRouter.get('/feed', requireAuth, async (req, res) => {

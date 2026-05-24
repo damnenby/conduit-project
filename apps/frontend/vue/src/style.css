@@ -5,12 +5,18 @@
 body {
   margin: 0;
   font-family: Arial, sans-serif;
+  line-height: 1.5;
   color: #222;
   background: #f7f7f7;
 }
 
 a {
   color: #1f6feb;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
 }
 
 header {
@@ -81,7 +87,12 @@ textarea {
 
 button {
   width: fit-content;
-  padding: 7px 10px;
+  min-height: 36px;
+  padding: 7px 12px;
+}
+
+button.active {
+  border: 2px solid #1f6feb;
 }
 
 @media (max-width: 600px) {
