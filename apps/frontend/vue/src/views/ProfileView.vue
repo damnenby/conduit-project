@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 
@@ -23,12 +23,20 @@ const { user } = useAuth()
 const profile = ref<Profile | null>(null)
 const articles = ref<Article[]>([])
 const errorMessage = ref('')
+const loadingArticles = ref(false)
+const activeTab = ref<'articles' | 'favorited'>('articles')
+
+const articleHeading = computed(() => {
+  return activeTab.value === 'articles' ? 'Articles' : 'Favorited articles'
+})
 
 const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString()
 }
 
 const fetchProfile = async () => {
+  errorMessage.value = ''
+
   try {
     const username = route.params.username?.toString()
     if (!username) return
@@ -49,13 +57,17 @@ const fetchProfile = async () => {
 }
 
 const fetchArticles = async () => {
+  loadingArticles.value = true
+  errorMessage.value = ''
+
   try {
     const username = route.params.username?.toString()
     if (!username) return
 
-    const response = await fetch(
-      `/api/articles?author=${encodeURIComponent(username)}`,
-    )
+    const params = new URLSearchParams()
+    params.set(activeTab.value === 'articles' ? 'author' : 'favorited', username)
+
+    const response = await fetch(`/api/articles?${params.toString()}`)
     const data = await response.json()
 
     if (!response.ok) {
@@ -66,7 +78,13 @@ const fetchArticles = async () => {
     articles.value = data.articles
   } catch {
     errorMessage.value = 'Could not load articles.'
+  } finally {
+    loadingArticles.value = false
   }
+}
+
+const selectTab = (tab: 'articles' | 'favorited') => {
+  activeTab.value = tab
 }
 
 const toggleFollow = async () => {
@@ -98,6 +116,19 @@ onMounted(() => {
   fetchProfile()
   fetchArticles()
 })
+
+watch(activeTab, () => {
+  fetchArticles()
+})
+
+watch(
+  () => route.params.username,
+  () => {
+    activeTab.value = 'articles'
+    fetchProfile()
+    fetchArticles()
+  },
+)
 </script>
 
 <template>
@@ -113,9 +144,27 @@ onMounted(() => {
     </div>
 
     <section>
-      <h2>Articles</h2>
+      <div class="profile-tabs">
+        <button
+          type="button"
+          :class="{ active: activeTab === 'articles' }"
+          @click="selectTab('articles')"
+        >
+          Articles
+        </button>
+        <button
+          type="button"
+          :class="{ active: activeTab === 'favorited' }"
+          @click="selectTab('favorited')"
+        >
+          Favorited
+        </button>
+      </div>
 
-      <p v-if="articles.length === 0">No articles yet.</p>
+      <h2>{{ articleHeading }}</h2>
+
+      <p v-if="loadingArticles">Loading articles...</p>
+      <p v-else-if="articles.length === 0">No articles yet.</p>
 
       <ul v-else class="article-list">
         <li v-for="article in articles" :key="article.slug">
@@ -124,7 +173,9 @@ onMounted(() => {
               {{ article.title }}
             </RouterLink>
           </h3>
-          <p class="article-meta">{{ formatDate(article.createdAt) }} &middot; {{ article.favoritesCount }} likes</p>
+          <p class="article-meta">
+            {{ formatDate(article.createdAt) }} &middot; {{ article.favoritesCount }} likes
+          </p>
           <p>{{ article.description }}</p>
         </li>
       </ul>

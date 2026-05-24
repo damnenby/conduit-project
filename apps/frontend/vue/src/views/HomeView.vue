@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useAuth } from '../composables/useAuth'
 
 type Article = {
   slug: string
@@ -8,6 +9,7 @@ type Article = {
   description: string
   createdAt: string
   tagList: string[]
+  favorited: boolean
   favoritesCount: number
   author: {
     username: string
@@ -22,11 +24,10 @@ const loading = ref(false)
 const articlesCount = ref(0)
 const page = ref(0)
 const pageSize = 10
+const { user } = useAuth()
 
 const canGoBack = computed(() => page.value > 0)
-const canGoNext = computed(
-  () => (page.value + 1) * pageSize < articlesCount.value,
-)
+const canGoNext = computed(() => (page.value + 1) * pageSize < articlesCount.value)
 
 const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString()
@@ -44,7 +45,10 @@ const fetchArticles = async (tag = selectedTag.value, nextPage = page.value) => 
 
     if (tag) params.set('tag', tag)
 
-    const response = await fetch(`/api/articles?${params.toString()}`)
+    const headers = user.value ? { Authorization: `Token ${user.value.token}` } : undefined
+    const response = await fetch(`/api/articles?${params.toString()}`, {
+      headers,
+    })
     const data = await response.json()
 
     if (!response.ok) {
@@ -61,6 +65,32 @@ const fetchArticles = async (tag = selectedTag.value, nextPage = page.value) => 
   } finally {
     loading.value = false
   }
+}
+
+const toggleFavorite = async (article: Article) => {
+  if (!user.value) {
+    errorMessage.value = 'Please login to favorite articles.'
+    return
+  }
+
+  const method = article.favorited ? 'DELETE' : 'POST'
+  const response = await fetch(`/api/articles/${article.slug}/favorite`, {
+    method,
+    headers: {
+      Authorization: `Token ${user.value.token}`,
+    },
+  })
+  const data = await response.json()
+
+  if (!response.ok) {
+    errorMessage.value = data.errors?.body?.[0] ?? 'Could not update favorite.'
+    return
+  }
+
+  articles.value = articles.value.map((currentArticle) =>
+    currentArticle.slug === data.article.slug ? data.article : currentArticle,
+  )
+  errorMessage.value = ''
 }
 
 const selectTag = (tag = '') => {
@@ -112,7 +142,8 @@ onMounted(() => {
                   <RouterLink :to="`/profiles/${article.author.username}`">
                     {{ article.author.username }}
                   </RouterLink>
-                  &middot; {{ formatDate(article.createdAt) }} &middot; {{ article.favoritesCount }} likes
+                  &middot; {{ formatDate(article.createdAt) }} &middot;
+                  {{ article.favoritesCount }} likes
                 </p>
                 <p>{{ article.description }}</p>
                 <ul class="tag-list">
@@ -120,6 +151,12 @@ onMounted(() => {
                     {{ tag }}
                   </li>
                 </ul>
+                <div class="article-actions">
+                  <button type="button" class="ghost" @click="toggleFavorite(article)">
+                    {{ article.favorited ? 'Unfavorite' : 'Favorite' }}
+                    ({{ article.favoritesCount }})
+                  </button>
+                </div>
               </article>
             </li>
           </ul>
@@ -150,11 +187,7 @@ onMounted(() => {
         <div class="tags-sidebar-inner">
           <h2>Tags</h2>
           <div class="tag-filters">
-            <button
-              type="button"
-              :class="{ active: !selectedTag }"
-              @click="selectTag()"
-            >
+            <button type="button" :class="{ active: !selectedTag }" @click="selectTag()">
               All
             </button>
             <button
