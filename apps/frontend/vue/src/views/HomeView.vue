@@ -91,77 +91,85 @@ onMounted(() => {
     <h1>Conduit</h1>
     <p>A simple page for reading articles.</p>
 
-    <p v-if="errorMessage">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
 
-    <aside>
-      <h2>Tags</h2>
-      <button
-        type="button"
-        :class="{ active: !selectedTag }"
-        @click="selectTag()"
-      >
-        All
-      </button>
-      <button
-        v-for="tag in tags"
-        :key="tag"
-        type="button"
-        :class="{ active: selectedTag === tag }"
-        @click="selectTag(tag)"
-      >
-        {{ tag }}
-      </button>
-      <p v-if="selectedTag">Showing tag: {{ selectedTag }}</p>
-    </aside>
+    <div class="home-layout">
+      <div>
+        <p v-if="loading">Loading articles...</p>
+        <p v-else-if="articles.length === 0">No articles yet.</p>
 
-    <p v-if="loading">Loading articles...</p>
-    <p v-else-if="articles.length === 0">No articles yet.</p>
+        <template v-else>
+          <ul class="article-list">
+            <li v-for="article in articles" :key="article.slug">
+              <article>
+                <h2>
+                  <RouterLink :to="`/articles/${article.slug}`">
+                    {{ article.title }}
+                  </RouterLink>
+                </h2>
+                <p class="article-meta">
+                  by
+                  <RouterLink :to="`/profiles/${article.author.username}`">
+                    {{ article.author.username }}
+                  </RouterLink>
+                  &middot; {{ formatDate(article.createdAt) }} &middot; {{ article.favoritesCount }} likes
+                </p>
+                <p>{{ article.description }}</p>
+                <ul class="tag-list">
+                  <li v-for="tag in article.tagList" :key="tag">
+                    {{ tag }}
+                  </li>
+                </ul>
+              </article>
+            </li>
+          </ul>
 
-    <template v-else>
-      <ul>
-        <li v-for="article in articles" :key="article.slug">
-          <article>
-            <h2>
-              <RouterLink :to="`/articles/${article.slug}`">
-                {{ article.title }}
-              </RouterLink>
-            </h2>
-            <p>
-              by
-              <RouterLink :to="`/profiles/${article.author.username}`">
-                {{ article.author.username }}
-              </RouterLink>
-            </p>
-            <p>Published: {{ formatDate(article.createdAt) }}</p>
-            <p>{{ article.description }}</p>
-            <p>Likes: {{ article.favoritesCount }}</p>
+          <nav aria-label="Article pages" class="pagination">
+            <button
+              type="button"
+              class="ghost"
+              :disabled="!canGoBack"
+              @click="fetchArticles(selectedTag, page - 1)"
+            >
+              Previous
+            </button>
+            <span>Page {{ page + 1 }}</span>
+            <button
+              type="button"
+              class="ghost"
+              :disabled="!canGoNext"
+              @click="fetchArticles(selectedTag, page + 1)"
+            >
+              Next
+            </button>
+          </nav>
+        </template>
+      </div>
 
-            <ul>
-              <li v-for="tag in article.tagList" :key="tag">
-                {{ tag }}
-              </li>
-            </ul>
-          </article>
-        </li>
-      </ul>
-
-      <nav aria-label="Article pages">
-        <button
-          type="button"
-          :disabled="!canGoBack"
-          @click="fetchArticles(selectedTag, page - 1)"
-        >
-          Previous
-        </button>
-        <span>Page {{ page + 1 }}</span>
-        <button
-          type="button"
-          :disabled="!canGoNext"
-          @click="fetchArticles(selectedTag, page + 1)"
-        >
-          Next
-        </button>
-      </nav>
-    </template>
+      <aside class="tags-sidebar">
+        <div class="tags-sidebar-inner">
+          <h2>Tags</h2>
+          <div class="tag-filters">
+            <button
+              type="button"
+              :class="{ active: !selectedTag }"
+              @click="selectTag()"
+            >
+              All
+            </button>
+            <button
+              v-for="tag in tags"
+              :key="tag"
+              type="button"
+              :class="{ active: selectedTag === tag }"
+              @click="selectTag(tag)"
+            >
+              {{ tag }}
+            </button>
+          </div>
+          <p v-if="selectedTag" class="article-meta">Showing: {{ selectedTag }}</p>
+        </div>
+      </aside>
+    </div>
   </section>
 </template>

@@ -92,8 +92,8 @@ const logoutAndGoHome = () => {
     </p>
 
     <form v-else @submit.prevent="saveSettings">
-      <p v-if="errorMessage">{{ errorMessage }}</p>
-      <p v-if="successMessage">{{ successMessage }}</p>
+      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+      <p v-if="successMessage" class="success-message">{{ successMessage }}</p>
 
       <label>
         Username
@@ -121,7 +121,7 @@ const logoutAndGoHome = () => {
       </label>
 
       <button type="submit">Save settings</button>
-      <button type="button" @click="logoutAndGoHome">Logout</button>
+      <button type="button" class="ghost" @click="logoutAndGoHome">Logout</button>
     </form>
   </section>
 </template>

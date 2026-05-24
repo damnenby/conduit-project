@@ -139,7 +139,7 @@ onMounted(() => {
   <section>
     <h1>Edit Article</h1>
 
-    <p v-if="errorMessage">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
 
     <form v-if="article" @submit.prevent="updateArticle">
       <label>
@@ -163,7 +163,7 @@ onMounted(() => {
       </label>
 
       <button type="submit">Update article</button>
-      <button type="button" @click="deleteArticle">Delete article</button>
+      <button type="button" class="danger" @click="deleteArticle">Delete article</button>
     </form>
   </section>
 </template>

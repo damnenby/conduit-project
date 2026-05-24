@@ -102,12 +102,11 @@ onMounted(() => {
 
 <template>
   <section>
-    <p v-if="errorMessage">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
 
     <div v-if="profile">
       <h1>{{ profile.username }}</h1>
       <p>{{ profile.bio ?? 'No bio yet.' }}</p>
-      <p>Following: {{ profile.following ? 'yes' : 'no' }}</p>
       <button v-if="user?.username !== profile.username" @click="toggleFollow">
         {{ profile.following ? 'Unfollow' : 'Follow' }}
       </button>
@@ -118,16 +117,15 @@ onMounted(() => {
 
       <p v-if="articles.length === 0">No articles yet.</p>
 
-      <ul v-else>
+      <ul v-else class="article-list">
         <li v-for="article in articles" :key="article.slug">
           <h3>
             <RouterLink :to="`/articles/${article.slug}`">
               {{ article.title }}
             </RouterLink>
           </h3>
+          <p class="article-meta">{{ formatDate(article.createdAt) }} &middot; {{ article.favoritesCount }} likes</p>
           <p>{{ article.description }}</p>
-          <p>Published: {{ formatDate(article.createdAt) }}</p>
-          <p>Likes: {{ article.favoritesCount }}</p>
         </li>
       </ul>
     </section>

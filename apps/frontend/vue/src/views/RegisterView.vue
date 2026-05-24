@@ -52,7 +52,7 @@ const register = async () => {
   <section>
     <h1>Register</h1>
 
-    <p v-if="errorMessage">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
 
     <form @submit.prevent="register">
       <label>

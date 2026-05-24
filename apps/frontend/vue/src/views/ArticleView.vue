@@ -187,36 +187,36 @@ onMounted(() => {
 </script>
 
 <template>
-  <p v-if="errorMessage">{{ errorMessage }}</p>
+  <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
 
   <article v-if="article">
     <h1>{{ article.title }}</h1>
-    <p>
+    <p class="article-meta">
       by
       <RouterLink :to="`/profiles/${article.author.username}`">
         {{ article.author.username }}
       </RouterLink>
+      &middot; {{ formatDate(article.createdAt) }}
     </p>
-    <p>Published: {{ formatDate(article.createdAt) }}</p>
     <p>{{ article.description }}</p>
 
     <p class="article-body">{{ article.body }}</p>
 
-    <p>Likes: {{ article.favoritesCount }}</p>
-    <button @click="toggleFavorite">
-      {{ article.favorited ? 'Unfavorite' : 'Favorite' }}
-    </button>
-
-    <button v-if="isOwnArticle" @click="deleteArticle">Delete article</button>
-    <RouterLink v-if="isOwnArticle" :to="`/editor/${article.slug}`">
-      Edit article
-    </RouterLink>
-
-    <ul>
+    <ul class="tag-list">
       <li v-for="tag in article.tagList" :key="tag">
         {{ tag }}
       </li>
     </ul>
+
+    <div class="article-actions">
+      <button @click="toggleFavorite">
+        {{ article.favorited ? 'Unfavorite' : 'Favorite' }} ({{ article.favoritesCount }})
+      </button>
+      <RouterLink v-if="isOwnArticle" :to="`/editor/${article.slug}`">
+        Edit article
+      </RouterLink>
+      <button v-if="isOwnArticle" class="danger" @click="deleteArticle">Delete article</button>
+    </div>
   </article>
 
   <section>
@@ -234,22 +234,24 @@ onMounted(() => {
       <RouterLink to="/login">Login</RouterLink> to comment.
     </p>
 
-    <ul>
+    <ul class="comment-list">
       <li v-for="comment in comments" :key="comment.id">
         <p>{{ comment.body }}</p>
-        <p>
-          by
-          <RouterLink :to="`/profiles/${comment.author.username}`">
-            {{ comment.author.username }}
-          </RouterLink>
-        </p>
-        <p>{{ formatDate(comment.createdAt) }}</p>
-        <button
-          v-if="comment.author.username === user?.username"
-          @click="deleteComment(comment.id)"
-        >
-          Delete
-        </button>
+        <div class="comment-footer">
+          <span class="article-meta">
+            <RouterLink :to="`/profiles/${comment.author.username}`">
+              {{ comment.author.username }}
+            </RouterLink>
+            &middot; {{ formatDate(comment.createdAt) }}
+          </span>
+          <button
+            v-if="comment.author.username === user?.username"
+            class="ghost"
+            @click="deleteComment(comment.id)"
+          >
+            Delete
+          </button>
+        </div>
       </li>
     </ul>
   </section>

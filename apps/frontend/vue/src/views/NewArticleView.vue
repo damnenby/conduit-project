@@ -61,7 +61,7 @@ const createArticle = async () => {
   <section>
     <h1>New Article</h1>
 
-    <p v-if="errorMessage">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
 
     <form @submit.prevent="createArticle">
       <label>

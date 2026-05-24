@@ -61,11 +61,11 @@ onMounted(() => {
     <h1>Feed</h1>
     <p>Articles from followed authors.</p>
 
-    <p v-if="errorMessage">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
     <p v-if="loading">Loading feed...</p>
     <p v-else-if="articles.length === 0">No feed articles yet.</p>
 
-    <ul v-else>
+    <ul v-else class="article-list">
       <li v-for="article in articles" :key="article.slug">
         <article>
           <h2>
@@ -73,17 +73,15 @@ onMounted(() => {
               {{ article.title }}
             </RouterLink>
           </h2>
-          <p>
+          <p class="article-meta">
             by
             <RouterLink :to="`/profiles/${article.author.username}`">
               {{ article.author.username }}
             </RouterLink>
+            &middot; {{ formatDate(article.createdAt) }} &middot; {{ article.favoritesCount }} likes
           </p>
-          <p>Published: {{ formatDate(article.createdAt) }}</p>
           <p>{{ article.description }}</p>
-          <p>Likes: {{ article.favoritesCount }}</p>
-
-          <ul>
+          <ul class="tag-list">
             <li v-for="tag in article.tagList" :key="tag">
               {{ tag }}
             </li>

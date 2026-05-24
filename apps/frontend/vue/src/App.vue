@@ -1,7 +1,7 @@
 <template>
   <header>
     <nav>
-      <RouterLink to="/">Conduit</RouterLink>
+      <RouterLink to="/" class="nav-brand">Conduit</RouterLink>
 
       <template v-if="isLoggedIn">
         <RouterLink to="/feed">Feed</RouterLink>
@@ -10,7 +10,7 @@
         <RouterLink v-if="user" :to="`/profiles/${user.username}`">
           {{ user.username }}
         </RouterLink>
-        <button @click="logout">Logout</button>
+        <button class="ghost" @click="logout">Logout</button>
       </template>
 
       <template v-else>
