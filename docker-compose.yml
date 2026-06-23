@@ -2,7 +2,7 @@ services:
   backend:
     build:
       context: .
-      dockerfile: apps/backend/express/Dockerfile
+      dockerfile: apps/backend/nest/Dockerfile
     environment:
       DATABASE_URL: file:/data/dev.db
       JWT_SECRET: conduit-dev-secret
@@ -25,7 +25,7 @@ services:
       sh -c "cd libs/database/sqlite
       && pnpm exec prisma migrate deploy --config prisma.config.ts
       && cd /app
-      && pnpm --filter express start"
+      && pnpm --filter nest start"
 
   frontend:
     build:

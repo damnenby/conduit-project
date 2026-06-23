@@ -17,9 +17,9 @@ personal feed of the authors they follow.
 ## Tech stack
 
 - **Frontend:** Vue 3 + Vue Router, built with Vite
-- **Backend:** Express 5 + TypeScript (run with `tsx`)
+- **Backend:** NestJS 11 + TypeScript
 - **Database:** SQLite via Prisma 7 (better-sqlite3 driver adapter)
-- **Auth:** JWT, sent as `Authorization: Token <jwt>`; passwords hashed with bcrypt
+- **Auth:** JWT (`@nestjs/jwt`), sent as `Authorization: Token <jwt>`; passwords hashed with bcrypt
 - **Tooling:** pnpm workspaces (monorepo), Docker Compose
 
 ## Documentation
@@ -64,7 +64,7 @@ cd ../../..
 Start the backend (terminal 1):
 
 ```bash
-pnpm start:express
+pnpm start:nest
 ```
 
 Start the frontend (terminal 2):
@@ -87,13 +87,13 @@ so there are no hardcoded `localhost` URLs in the frontend code.
 
 The defaults are local demo values only. A real deployment would provide a strong
 `JWT_SECRET` from a secret store. An example file is in
-`apps/backend/express/.env.example`.
+`apps/backend/nest/.env.example`.
 
 ## Project structure
 
 ```
 apps/
-  backend/express/   Express + TypeScript REST API
+  backend/nest/      NestJS + TypeScript REST API
   frontend/vue/      Vue 3 single-page app
 libs/
   database/          Prisma schema, migrations, generated client (@common/database)
@@ -114,28 +114,31 @@ Tags: list tags in use.
 
 ## Design decisions (for the defense)
 
-- **Express instead of NestJS.** The teacher allows any choice inside the
-  TypeScript universe as long as the OpenAPI spec is followed. Express was chosen
-  for a small, explicit surface: each router maps directly to spec endpoints with
-  no framework magic, which makes the code easy to read and explain. The
-  consequence is that there is no built-in dependency injection or module system,
-  and each module keeps its controller and business logic together. If the
-  project grew, that logic would be the natural thing to extract into a service
-  layer. **If the course strictly requires NestJS, this is the main point to
-  clarify with the teacher before submission.**
-- **Authorization via Express middleware.** `requireAuth` / `optionalAuth`
-  (in `apps/backend/express/src/middleware/auth.ts`) are the Express equivalent of
-  NestJS guards: they attach only to the routes that need them. Authentication
-  failures return **401**; ownership failures (e.g. editing someone else's
-  article) are checked in the handler and return **403**.
+- **NestJS.** The backend uses NestJS to stay in the NestJS/TypeScript universe.
+  It is organized into feature modules (`users`, `profiles`, `articles`, `tags`)
+  where **controllers** handle the HTTP layer and **services** hold the business
+  logic. Dependencies are wired through Nest's DI container; the database is a
+  global `PrismaModule`, and a single global exception filter keeps every error in
+  the `{ errors: { body } }` shape.
+- **Authorization via guards.** `AuthGuard` / `OptionalAuthGuard`
+  (`apps/backend/nest/src/common/auth/`) read the `Authorization: Token <jwt>`
+  header. We use guards rather than middleware because they integrate with Nest's
+  execution context and attach cleanly to exactly the routes that need them.
+  Authentication failures return **401**; ownership failures (e.g. editing someone
+  else's article) are checked in the service and return **403**.
+- **Runtime (SWC, ESM).** The app runs from TypeScript source via
+  `@swc-node/register`. SWC is used because the Prisma 7 client is ESM (it uses
+  `import.meta`) and NestJS DI needs decorator metadata — SWC supports both, which
+  plain esbuild/`tsx` does not. `pnpm build` type-checks with `tsc`.
 - **SQLite + Prisma.** A single-file database keeps the project reproducible and
   trivial to run in Docker, while Prisma provides a typed client and migrations.
+  The connection lives in a `PrismaService` that connects on `onModuleInit`.
 
 ## Known limitations / future work
 
-- The backend runs through `tsx` (TypeScript at runtime) rather than serving a
-  compiled bundle; this is fine for the project scope but a production build would
-  serve the compiled output.
+- The backend runs from TypeScript source via SWC rather than serving a compiled
+  bundle; this is fine for the project scope, but a production build would run
+  `nest build` and serve the compiled output.
 - The frontend runs the Vite dev server in Docker for simplicity; a production
   setup would build static files and serve them behind a small web server.
 - There is no automated test suite; the API was verified manually.
