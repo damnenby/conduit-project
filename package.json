@@ -4,8 +4,8 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "start:express": "pnpm --filter 'express' start",
-    "build:express": "pnpm --filter 'express' build",
+    "start:nest": "pnpm --filter 'nest' start",
+    "build:nest": "pnpm --filter 'nest' build",
     "start:vue": "pnpm --filter 'vue' dev",
     "build:vue": "pnpm --filter 'vue' build"
   },

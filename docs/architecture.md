@@ -11,7 +11,7 @@ Conduit is a small article/blogging application (a "RealWorld"-style app). It
 consists of:
 
 - a **Vue 3** single-page frontend (`apps/frontend/vue`),
-- an **Express + TypeScript** REST backend (`apps/backend/express`),
+- a **NestJS + TypeScript** REST backend (`apps/backend/nest`),
 - a **SQLite** database accessed through **Prisma** (`libs/database/sqlite`),
 - shared **TypeScript models** (`libs/model`).
 
@@ -63,29 +63,37 @@ flowchart TB
         router --> useAuth
     end
 
-    subgraph be["apps/backend/express (Express API)"]
-        main["main.ts<br/>app + /api routes + error handler"]
-        authmw["middleware/auth.ts<br/>requireAuth / optionalAuth"]
-        users["modules/users"]
-        articles["modules/articles"]
-        profiles["modules/profiles"]
-        tags["modules/tags"]
-        utils["utils<br/>jwt.ts, password.ts"]
-        dbclient["db/prisma.ts<br/>PrismaClient + better-sqlite3 adapter"]
+    subgraph be["apps/backend/nest (NestJS API)"]
+        main["main.ts<br/>bootstrap, /api prefix,<br/>global exception filter"]
 
-        main --> users
-        main --> articles
-        main --> profiles
-        main --> tags
-        users --> authmw
-        articles --> authmw
-        profiles --> authmw
-        users --> utils
-        authmw --> utils
-        users --> dbclient
-        articles --> dbclient
-        profiles --> dbclient
-        tags --> dbclient
+        subgraph features["Feature modules (controller -> service)"]
+            usersC["Users + CurrentUser<br/>controllers"]
+            usersS["UsersService"]
+            artC["ArticlesController"]
+            artS["ArticlesService"]
+            profC["ProfilesController"]
+            profS["ProfilesService"]
+            tagC["TagsController"]
+            tagS["TagsService"]
+            usersC --> usersS
+            artC --> artS
+            profC --> profS
+            tagC --> tagS
+        end
+
+        subgraph globals["Global modules"]
+            auth["AuthModule<br/>AuthGuard / OptionalAuthGuard<br/>TokenService (JWT)"]
+            prismaS["PrismaModule<br/>PrismaService"]
+        end
+
+        main --> features
+        usersC --> auth
+        artC --> auth
+        profC --> auth
+        usersS --> prismaS
+        artS --> prismaS
+        profS --> prismaS
+        tagS --> prismaS
     end
 
     subgraph libs["libs (shared code)"]
@@ -96,8 +104,8 @@ flowchart TB
     db[("SQLite file<br/>dev.db")]
 
     views -->|"fetch /api/... with Token header"| main
-    articles --> model
-    dbclient --> database
+    artS --> model
+    prismaS --> database
     database --> db
 ```
 
@@ -105,12 +113,11 @@ flowchart TB
 
 | Component | Responsibility |
 | --- | --- |
-| `main.ts` | Creates the Express app, parses JSON bodies, mounts the routers under `/api`, and registers the global error handler. |
-| `modules/*` | One router per resource. Each handler is the HTTP/API layer **and** the business logic for that resource (controller + service combined, which is appropriate for a project of this size). |
-| `middleware/auth.ts` | `requireAuth` rejects requests without a valid token (401); `optionalAuth` attaches the user if a token is present but still allows anonymous access. |
-| `utils/jwt.ts` | Signs and verifies JWTs. |
-| `utils/password.ts` | Hashes and verifies passwords with bcrypt. |
-| `db/prisma.ts` | Single Prisma client instance, configured with the better-sqlite3 adapter and the `DATABASE_URL`. |
+| `main.ts` | Bootstraps the Nest app, sets the global `/api` prefix, and registers the global exception filter. |
+| Feature modules (`users`, `profiles`, `articles`, `tags`) | Each module has a **controller** (HTTP layer: routing, status codes, guards) and a **service** (business logic + validation). |
+| `common/auth` | `AuthGuard` rejects requests without a valid token (401); `OptionalAuthGuard` attaches the user if a token is present but still allows anonymous access; `TokenService` signs/verifies JWTs; `password.ts` hashes/verifies passwords with bcrypt; `@CurrentUser()` exposes the user id to controllers. |
+| `common/all-exceptions.filter.ts` | Normalizes every error to the `{ errors: { body } }` shape and logs unexpected errors (the 500 fallback). |
+| `PrismaService` / `PrismaModule` | A single Prisma client (extends `PrismaClient`) configured with the better-sqlite3 adapter and `DATABASE_URL`; connects on `onModuleInit`. Provided globally. |
 | `libs/model` | Shared response types (`Article`, `Comment`, `Profile`, `User`), imported by the backend via the `@common/model` path alias. |
 | `libs/database` | Prisma schema, migrations, and the generated client, imported via `@common/database`. |
 
@@ -128,7 +135,7 @@ course reference repository.
 sequenceDiagram
     actor U as User (browser)
     participant FE as Vue (LoginView)
-    participant BE as Express (/api/users/login)
+    participant BE as NestJS (/api/users/login)
     participant DB as SQLite (Prisma)
 
     U->>FE: enter email + password
@@ -155,32 +162,34 @@ actions.
 sequenceDiagram
     actor U as User (browser)
     participant FE as Vue
-    participant MW as requireAuth
-    participant H as articles handler
+    participant G as AuthGuard
+    participant C as ArticlesController
+    participant S as ArticlesService
     participant DB as SQLite (Prisma)
 
     U->>FE: click "Delete article"
-    FE->>MW: DELETE /api/articles/:slug (Authorization: Token <jwt>)
-    MW->>MW: verify JWT
+    FE->>G: DELETE /api/articles/:slug (Authorization: Token <jwt>)
+    G->>G: verify JWT
     alt no/invalid token
-        MW-->>FE: 401 Unauthorized
+        G-->>FE: 401 Unauthorized
     else valid token
-        MW->>H: next() with req.userId
-        H->>DB: find article by slug
+        G->>C: allow, attach userId
+        C->>S: remove(slug, userId)
+        S->>DB: find article by slug
         alt not found
-            H-->>FE: 404 Not Found
+            S-->>FE: 404 Not Found
         else found but article.authorId != userId
-            H-->>FE: 403 Forbidden
+            S-->>FE: 403 Forbidden
         else found and owned
-            H->>DB: delete article
-            H-->>FE: 204 No Content
+            S->>DB: delete article
+            S-->>FE: 204 No Content
         end
     end
 ```
 
 The key point for the defense: authentication (is the token valid?) is handled by
-the `requireAuth` middleware and returns **401**, while authorization (does this
-user own the resource?) is checked inside the handler and returns **403**.
+the `AuthGuard` and returns **401**, while authorization (does this user own the
+resource?) is checked inside the service and returns **403**.
 
 ---
 
@@ -193,7 +202,7 @@ flowchart TB
     subgraph host["Host machine"]
         subgraph compose["Docker Compose network"]
             fe["frontend container<br/>Vite dev server<br/>port 5173"]
-            be["backend container<br/>Express on port 3000<br/>runs prisma migrate deploy on start"]
+            be["backend container<br/>NestJS on port 3000<br/>runs prisma migrate deploy on start"]
             vol[("conduit-data volume<br/>mounted at /data<br/>holds dev.db")]
         end
     end
@@ -223,19 +232,23 @@ flowchart TB
 
 ## Notable design decisions
 
-- **Express instead of NestJS.** The course allows any choice inside the
-  TypeScript universe as long as the OpenAPI spec is followed. Express was chosen
-  for its small, explicit surface: routers map directly to the spec and there is
-  little framework "magic" to explain. The trade-off is that there is no built-in
-  dependency injection or module system, and controller/service code lives
-  together per module. See the README for the full rationale and consequences.
-- **Authorization with middleware (not guards).** NestJS guards were not used
-  because the project does not use NestJS. The equivalent here is Express
-  middleware (`requireAuth` / `optionalAuth`), which attaches to exactly the
-  routes that need it.
+- **NestJS.** The backend uses NestJS to stay in the NestJS/TypeScript universe.
+  Each resource is a module with a controller (HTTP layer) and a service (business
+  logic); the DI container wires them together. This is more structure than a bare
+  router framework, but it makes responsibilities explicit and is easy to explain.
+- **Authorization with guards.** `AuthGuard` / `OptionalAuthGuard` are used
+  instead of middleware because guards integrate with Nest's execution context and
+  attach declaratively (`@UseGuards`) to exactly the routes that need them, keeping
+  the controller/service separation clean.
+- **Controller + service per module.** Controllers stay thin and only deal with
+  HTTP concerns (routing, status codes, guards, reading the body); the services
+  hold the validation and database logic. Validation is explicit in the services
+  (rather than DTO decorators) so the responses match the OpenAPI error contract
+  exactly.
 - **SQLite via Prisma.** A single-file database keeps the project reproducible
-  and easy to start in Docker; Prisma gives a typed client and migrations.
-- **Combined controller/service per module.** For a project of this size, a
-  separate service layer would add indirection without real benefit. If the
-  project grew, the business logic in each `*.controller.ts` would be the natural
-  thing to extract into a service.
+  and easy to start in Docker; Prisma gives a typed client and migrations. The
+  connection lives in a global `PrismaService` that connects on `onModuleInit`.
+- **Runtime via SWC.** The app runs from TypeScript source through
+  `@swc-node/register`, because the Prisma 7 client is ESM (uses `import.meta`) and
+  NestJS DI needs decorator metadata — SWC supports both. `pnpm build` type-checks
+  with `tsc`.
