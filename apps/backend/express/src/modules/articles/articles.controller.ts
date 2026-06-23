@@ -24,10 +24,17 @@ const articleInclude = {
 type ArticleFromDatabase = Prisma.ArticleGetPayload<{
   include: typeof articleInclude;
 }>;
+
+const commentInclude = {
+  author: {
+    include: {
+      followers: true,
+    },
+  },
+} satisfies Prisma.CommentInclude;
+
 type CommentFromDatabase = Prisma.CommentGetPayload<{
-  include: {
-    author: true;
-  };
+  include: typeof commentInclude;
 }>;
 
 const slugify = (title: string) => {
@@ -88,7 +95,10 @@ const mapArticleFromDatabase = (
   };
 };
 
-const mapCommentFromDatabase = (comment: CommentFromDatabase): Comment => {
+const mapCommentFromDatabase = (
+  comment: CommentFromDatabase,
+  currentUserId?: number,
+): Comment => {
   return {
     id: comment.id,
     body: comment.body,
@@ -98,7 +108,11 @@ const mapCommentFromDatabase = (comment: CommentFromDatabase): Comment => {
       username: comment.author.username,
       bio: comment.author.bio,
       image: comment.author.image,
-      following: false,
+      following: currentUserId
+        ? comment.author.followers.some(
+            (follow) => follow.followerId === currentUserId,
+          )
+        : false,
     },
   };
 };
@@ -464,7 +478,8 @@ articlesRouter.delete('/:slug', requireAuth, async (req, res) => {
   return res.sendStatus(204);
 });
 
-articlesRouter.get('/:slug/comments', async (req, res) => {
+articlesRouter.get('/:slug/comments', optionalAuth, async (req, res) => {
+  const authReq = req as AuthRequest;
   const slug = String(req.params.slug);
   const article = await prisma.article.findUnique({
     where: {
@@ -487,13 +502,13 @@ articlesRouter.get('/:slug/comments', async (req, res) => {
     orderBy: {
       createdAt: 'desc',
     },
-    include: {
-      author: true,
-    },
+    include: commentInclude,
   });
 
   return res.json({
-    comments: databaseComments.map(mapCommentFromDatabase),
+    comments: databaseComments.map((comment) =>
+      mapCommentFromDatabase(comment, authReq.userId),
+    ),
   });
 });
 
@@ -541,13 +556,11 @@ articlesRouter.post('/:slug/comments', requireAuth, async (req, res) => {
       authorId: user.id,
       body,
     },
-    include: {
-      author: true,
-    },
+    include: commentInclude,
   });
 
   return res.status(201).json({
-    comment: mapCommentFromDatabase(comment),
+    comment: mapCommentFromDatabase(comment, user.id),
   });
 });
 
