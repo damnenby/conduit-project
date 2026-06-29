@@ -541,6 +541,7 @@ textarea:focus {
   font-size: 1.5rem;
   line-height: 1.2;
   margin: 0 0 6px;
+  overflow-wrap: anywhere;
 }
 
 .article-title a {
@@ -561,6 +562,7 @@ textarea:focus {
   color: var(--muted);
   font-size: 1rem;
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .article-preview-foot {
@@ -782,6 +784,7 @@ textarea:focus {
   font-size: 2.4rem;
   line-height: 1.12;
   margin-bottom: 14px;
+  overflow-wrap: anywhere;
 }
 
 .article-meta {
@@ -804,6 +807,7 @@ textarea:focus {
   color: var(--muted);
   line-height: 1.55;
   margin: 0 0 20px;
+  overflow-wrap: anywhere;
 }
 
 .article-body {
@@ -872,6 +876,7 @@ textarea:focus {
 .comment-body {
   margin: 0 0 12px;
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .comment-footer {

@@ -276,3 +276,42 @@ on `:5173`, `/api` proxied to the backend). Driven with real headless-Chromium
   phone width (verified clean in headless Chromium, but eyes-on is reassuring).
 - Confirm the Google-Fonts (Newsreader) load on the grader's network; the
   Georgia/Iowan fallback is intentional if it's blocked.
+
+## Edge-case data sweep + one bug fixed (branch `redesign`)
+
+Loaded a large, varied dataset to stress the UI (now ~45 articles across 8
+authors, 32 tags, follows/favorites/comments) including deliberate edge cases:
+mixed-script + emoji titles (Cyrillic/CJK/Arabic), a ~170-char title, a long-form
+body, zero-tag and 12-tag articles, a 100+ char unbreakable token and long URLs,
+code/markdown bodies, duplicate titles, minimal content, and **HTML/XSS injection
+attempts** in titles, descriptions and comments. Then ran a focused Playwright
+bug hunt.
+
+What held up (no bug):
+
+- **XSS / escaping** — no `v-html`/`innerHTML` anywhere; every value renders via
+  Vue's auto-escaped `{{ }}`. Injected `<script>` / `<img onerror>` payloads show
+  as literal text, no dialog fires, no injected elements enter the DOM (titles,
+  bodies and comments all safe).
+- **Slug uniqueness** — duplicate titles get a numeric suffix
+  (`edge-case-duplicate-title`, `…-2`); both resolve to distinct articles.
+- **Validation** — whitespace-only comments are rejected (422).
+- Unicode/emoji render correctly; pagination walks all 5 pages (Next disabled on
+  the last); large favorite counts and many/zero tags render fine.
+
+Bug found and fixed:
+
+- **Mobile horizontal overflow on long unbreakable words / URLs.** A 100+ char
+  token or long URL in a title, lead, card title/excerpt, or comment pushed the
+  layout past the viewport (`scrollWidth` ≫ `innerWidth` at 375 px → horizontal
+  scroll). Fix: added `overflow-wrap: anywhere` to `.article-page > h1`,
+  `.article-lead`, `.article-title`, `.article-excerpt`, and `.comment-body` in
+  `style.css` (the article *body* already had it). `anywhere` (not `break-word`)
+  is required because the comment list is a CSS grid — `break-word` fixes the line
+  box but not grid min-content sizing. Re-verified: no overflow on any edge
+  article at 375 / 768 / 1280 px. `pnpm --filter vue build` still PASS.
+
+Note (minor, not fixed): a title made of *only* non-Latin characters slugifies to
+an empty base (the slugger strips non-ASCII), relying on the numeric-suffix
+fallback for uniqueness. Harmless here; worth a transliteration step if full
+i18n slugs are ever required.
