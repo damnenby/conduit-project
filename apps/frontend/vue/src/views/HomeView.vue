@@ -127,7 +127,7 @@ onMounted(() => {
       <div>
         <header class="page-head page-head--with-action">
           <div>
-            <h1>Conduit</h1>
+            <h1>Latest articles</h1>
             <p class="page-head-sub">A place to read and share articles.</p>
           </div>
           <RouterLink v-if="isLoggedIn" to="/editor" class="header-action">
