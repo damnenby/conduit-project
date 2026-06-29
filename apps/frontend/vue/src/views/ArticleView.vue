@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
+import { describeError } from '../composables/useApi'
 
 type Article = {
   slug: string
@@ -29,7 +30,7 @@ type Comment = {
 
 const route = useRoute()
 const router = useRouter()
-const { user } = useAuth()
+const { user, clearSession } = useAuth()
 const article = ref<Article | null>(null)
 const comments = ref<Comment[]>([])
 const errorMessage = ref('')
@@ -39,9 +40,12 @@ const isOwnArticle = computed(() => {
   return article.value?.author.username === user.value?.username
 })
 
-const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString()
-}
+const formatDate = (date: string) =>
+  new Date(date).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
 
 const fetchArticle = async () => {
   try {
@@ -51,7 +55,7 @@ const fetchArticle = async () => {
     const data = await response.json()
 
     if (!response.ok) {
-      errorMessage.value = data.errors?.body?.[0] ?? 'Could not load article.'
+      errorMessage.value = describeError(response.status, data, 'Could not load article.')
       return
     }
 
@@ -79,7 +83,7 @@ const toggleFavorite = async () => {
   if (!article.value) return
 
   if (!user.value) {
-    errorMessage.value = 'Please login to favorite articles.'
+    errorMessage.value = 'Please sign in to favorite articles.'
     return
   }
 
@@ -90,13 +94,19 @@ const toggleFavorite = async () => {
       Authorization: `Token ${user.value.token}`,
     },
   })
+
+  if (response.status === 401) {
+    clearSession()
+    return
+  }
+
   const data = await response.json()
 
   if (response.ok) {
     article.value = data.article
     errorMessage.value = ''
   } else {
-    errorMessage.value = data.errors?.body?.[0] ?? 'Could not update favorite.'
+    errorMessage.value = describeError(response.status, data, 'Could not update favorite.')
   }
 }
 
@@ -115,8 +125,13 @@ const deleteArticle = async () => {
     return
   }
 
+  if (response.status === 401) {
+    clearSession()
+    return
+  }
+
   const data = await response.json()
-  errorMessage.value = data.errors?.body?.[0] ?? 'Could not delete article.'
+  errorMessage.value = describeError(response.status, data, 'Could not delete article.')
 }
 
 const postComment = async () => {
@@ -142,10 +157,16 @@ const postComment = async () => {
         },
       }),
     })
+
+    if (response.status === 401) {
+      clearSession()
+      return
+    }
+
     const data = await response.json()
 
     if (!response.ok) {
-      errorMessage.value = data.errors?.body?.[0] ?? 'Could not post comment.'
+      errorMessage.value = describeError(response.status, data, 'Could not post comment.')
       return
     }
 
@@ -176,8 +197,13 @@ const deleteComment = async (commentId: number) => {
     return
   }
 
+  if (response.status === 401) {
+    clearSession()
+    return
+  }
+
   const data = await response.json()
-  errorMessage.value = data.errors?.body?.[0] ?? 'Could not delete comment.'
+  errorMessage.value = describeError(response.status, data, 'Could not delete comment.')
 }
 
 onMounted(() => {
@@ -189,63 +215,71 @@ onMounted(() => {
 <template>
   <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
 
-  <article v-if="article">
+  <article v-if="article" class="article-page">
     <h1>{{ article.title }}</h1>
     <p class="article-meta">
-      by
       <RouterLink :to="`/profiles/${article.author.username}`">
         {{ article.author.username }}
       </RouterLink>
-      &middot; {{ formatDate(article.createdAt) }}
+      <time :datetime="article.createdAt">{{ formatDate(article.createdAt) }}</time>
     </p>
-    <p>{{ article.description }}</p>
 
-    <p class="article-body">{{ article.body }}</p>
+    <p class="article-lead">{{ article.description }}</p>
 
-    <ul class="tag-list">
-      <li v-for="tag in article.tagList" :key="tag">
-        {{ tag }}
-      </li>
+    <div class="article-body">{{ article.body }}</div>
+
+    <ul v-if="article.tagList.length" class="tag-list">
+      <li v-for="tag in article.tagList" :key="tag">{{ tag }}</li>
     </ul>
 
     <div class="article-actions">
-      <button @click="toggleFavorite">
-        {{ article.favorited ? 'Unfavorite' : 'Favorite' }} ({{ article.favoritesCount }})
+      <button
+        type="button"
+        class="favorite-button"
+        :class="{ 'is-favorited': article.favorited }"
+        :aria-pressed="article.favorited"
+        @click="toggleFavorite"
+      >
+        {{ article.favorited ? 'Favorited' : 'Favorite' }}
+        <span class="favorite-count">{{ article.favoritesCount }}</span>
       </button>
-      <RouterLink v-if="isOwnArticle" :to="`/editor/${article.slug}`">
+      <RouterLink v-if="isOwnArticle" :to="`/editor/${article.slug}`" class="edit-link">
         Edit article
       </RouterLink>
-      <button v-if="isOwnArticle" class="danger" @click="deleteArticle">Delete article</button>
+      <button v-if="isOwnArticle" type="button" class="danger" @click="deleteArticle">
+        Delete article
+      </button>
     </div>
   </article>
 
-  <section>
+  <section class="comments-section">
     <h2>Comments</h2>
 
-    <form v-if="user" @submit.prevent="postComment">
+    <form v-if="user" class="comment-form" @submit.prevent="postComment">
       <label>
-        Add comment
-        <textarea v-model="newComment" rows="4"></textarea>
+        Add a comment
+        <textarea v-model="newComment" rows="4" placeholder="Share your thoughts…"></textarea>
       </label>
       <button type="submit">Post comment</button>
     </form>
 
-    <p v-else>
-      <RouterLink to="/login">Login</RouterLink> to comment.
+    <p v-else class="comment-login-hint">
+      <RouterLink to="/login">Sign in</RouterLink> to join the conversation.
     </p>
 
-    <ul class="comment-list">
+    <ul v-if="comments.length" class="comment-list">
       <li v-for="comment in comments" :key="comment.id">
-        <p>{{ comment.body }}</p>
+        <p class="comment-body">{{ comment.body }}</p>
         <div class="comment-footer">
-          <span class="article-meta">
+          <span class="comment-meta">
             <RouterLink :to="`/profiles/${comment.author.username}`">
               {{ comment.author.username }}
             </RouterLink>
-            &middot; {{ formatDate(comment.createdAt) }}
+            <time :datetime="comment.createdAt">{{ formatDate(comment.createdAt) }}</time>
           </span>
           <button
             v-if="comment.author.username === user?.username"
+            type="button"
             class="ghost"
             @click="deleteComment(comment.id)"
           >
@@ -254,5 +288,6 @@ onMounted(() => {
         </div>
       </li>
     </ul>
+    <p v-else class="comment-login-hint">No comments yet.</p>
   </section>
 </template>

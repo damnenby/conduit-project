@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
+import { describeError } from '../composables/useApi'
 
 const router = useRouter()
 const { setUser } = useAuth()
@@ -36,41 +37,56 @@ const register = async () => {
     const data = await response.json()
 
     if (!response.ok) {
-      errorMessage.value = data.errors?.body?.[0] ?? 'Could not register.'
+      errorMessage.value = describeError(response.status, data, 'Could not create account.')
       return
     }
 
     setUser(data.user)
     router.push('/')
   } catch {
-    errorMessage.value = 'Could not register.'
+    errorMessage.value = 'Could not create account.'
   }
 }
 </script>
 
 <template>
-  <section>
-    <h1>Register</h1>
+  <section class="auth-shell">
+    <header class="page-head">
+      <h1>Create your account</h1>
+      <p class="page-head-sub">Join Conduit to write and share articles.</p>
+    </header>
 
-    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+    <div class="auth-card">
+      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
 
-    <form @submit.prevent="register">
-      <label>
-        Username
-        <input v-model="username" required />
-      </label>
+      <form @submit.prevent="register">
+        <label>
+          Username
+          <input v-model="username" autocomplete="username" required />
+        </label>
 
-      <label>
-        Email
-        <input v-model="email" type="email" required />
-      </label>
+        <label>
+          Email
+          <input v-model="email" type="email" autocomplete="email" required />
+        </label>
 
-      <label>
-        Password
-        <input v-model="password" type="password" required />
-      </label>
+        <label>
+          Password
+          <input
+            v-model="password"
+            type="password"
+            autocomplete="new-password"
+            minlength="8"
+            required
+          />
+        </label>
 
-      <button type="submit">Register</button>
-    </form>
+        <button type="submit">Create account</button>
+      </form>
+    </div>
+
+    <p class="auth-footer">
+      Already have an account? <RouterLink to="/login">Sign in</RouterLink>
+    </p>
   </section>
 </template>

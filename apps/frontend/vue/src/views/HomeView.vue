@@ -2,6 +2,9 @@
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
+import { describeError } from '../composables/useApi'
+import ArticlePreview from '../components/ArticlePreview.vue'
+import EmptyState from '../components/EmptyState.vue'
 
 type Article = {
   slug: string
@@ -24,14 +27,10 @@ const loading = ref(false)
 const articlesCount = ref(0)
 const page = ref(0)
 const pageSize = 10
-const { user } = useAuth()
+const { user, isLoggedIn, clearSession } = useAuth()
 
 const canGoBack = computed(() => page.value > 0)
 const canGoNext = computed(() => (page.value + 1) * pageSize < articlesCount.value)
-
-const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString()
-}
 
 const fetchArticles = async (tag = selectedTag.value, nextPage = page.value) => {
   loading.value = true
@@ -52,7 +51,7 @@ const fetchArticles = async (tag = selectedTag.value, nextPage = page.value) => 
     const data = await response.json()
 
     if (!response.ok) {
-      errorMessage.value = data.errors?.body?.[0] ?? 'Could not load articles.'
+      errorMessage.value = describeError(response.status, data, 'Could not load articles.')
       return
     }
 
@@ -69,7 +68,7 @@ const fetchArticles = async (tag = selectedTag.value, nextPage = page.value) => 
 
 const toggleFavorite = async (article: Article) => {
   if (!user.value) {
-    errorMessage.value = 'Please login to favorite articles.'
+    errorMessage.value = 'Please sign in to favorite articles.'
     return
   }
 
@@ -80,10 +79,16 @@ const toggleFavorite = async (article: Article) => {
       Authorization: `Token ${user.value.token}`,
     },
   })
+
+  if (response.status === 401) {
+    clearSession()
+    return
+  }
+
   const data = await response.json()
 
   if (!response.ok) {
-    errorMessage.value = data.errors?.body?.[0] ?? 'Could not update favorite.'
+    errorMessage.value = describeError(response.status, data, 'Could not update favorite.')
     return
   }
 
@@ -118,46 +123,42 @@ onMounted(() => {
 
 <template>
   <section>
-    <h1>Conduit</h1>
-    <p>A simple page for reading articles.</p>
+    <header class="page-head">
+      <h1>Conduit</h1>
+      <p class="page-head-sub">A place to read and share articles.</p>
+    </header>
 
     <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
 
     <div class="home-layout">
       <div>
-        <p v-if="loading">Loading articles...</p>
-        <p v-else-if="articles.length === 0">No articles yet.</p>
+        <p v-if="loading" class="loading-note">Loading articles…</p>
+
+        <template v-else-if="articles.length === 0">
+          <EmptyState
+            v-if="selectedTag"
+            title="No articles with this tag"
+            :message="`Nothing has been published under “${selectedTag}” yet.`"
+          >
+            <button type="button" class="ghost" @click="selectTag()">
+              Show all articles
+            </button>
+          </EmptyState>
+          <EmptyState
+            v-else
+            title="No articles yet"
+            message="Once articles are published, they will show up here."
+          >
+            <RouterLink v-if="isLoggedIn" to="/editor" class="read-more">
+              Write the first article
+            </RouterLink>
+          </EmptyState>
+        </template>
 
         <template v-else>
           <ul class="article-list">
             <li v-for="article in articles" :key="article.slug">
-              <article>
-                <h2>
-                  <RouterLink :to="`/articles/${article.slug}`">
-                    {{ article.title }}
-                  </RouterLink>
-                </h2>
-                <p class="article-meta">
-                  by
-                  <RouterLink :to="`/profiles/${article.author.username}`">
-                    {{ article.author.username }}
-                  </RouterLink>
-                  &middot; {{ formatDate(article.createdAt) }} &middot;
-                  {{ article.favoritesCount }} likes
-                </p>
-                <p>{{ article.description }}</p>
-                <ul class="tag-list">
-                  <li v-for="tag in article.tagList" :key="tag">
-                    {{ tag }}
-                  </li>
-                </ul>
-                <div class="article-actions">
-                  <button type="button" class="ghost" @click="toggleFavorite(article)">
-                    {{ article.favorited ? 'Unfavorite' : 'Favorite' }}
-                    ({{ article.favoritesCount }})
-                  </button>
-                </div>
-              </article>
+              <ArticlePreview :article="article" @toggle-favorite="toggleFavorite" />
             </li>
           </ul>
 
@@ -185,8 +186,8 @@ onMounted(() => {
 
       <aside class="tags-sidebar">
         <div class="tags-sidebar-inner">
-          <h2>Tags</h2>
-          <div class="tag-filters">
+          <h2>Popular tags</h2>
+          <div v-if="tags.length" class="tag-filters">
             <button type="button" :class="{ active: !selectedTag }" @click="selectTag()">
               All
             </button>
@@ -200,7 +201,10 @@ onMounted(() => {
               {{ tag }}
             </button>
           </div>
-          <p v-if="selectedTag" class="article-meta">Showing: {{ selectedTag }}</p>
+          <p v-else class="tags-empty">No tags yet.</p>
+          <p v-if="selectedTag" class="tags-active-note">
+            Filtering by “{{ selectedTag }}”.
+          </p>
         </div>
       </aside>
     </div>

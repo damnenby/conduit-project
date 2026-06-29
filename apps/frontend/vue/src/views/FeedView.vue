@@ -2,6 +2,9 @@
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
+import { describeError } from '../composables/useApi'
+import ArticlePreview from '../components/ArticlePreview.vue'
+import EmptyState from '../components/EmptyState.vue'
 
 type Article = {
   slug: string
@@ -22,14 +25,10 @@ const loading = ref(false)
 const articlesCount = ref(0)
 const page = ref(0)
 const pageSize = 10
-const { user } = useAuth()
+const { user, isLoggedIn, clearSession } = useAuth()
 
 const canGoBack = computed(() => page.value > 0)
 const canGoNext = computed(() => (page.value + 1) * pageSize < articlesCount.value)
-
-const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString()
-}
 
 const fetchFeed = async (nextPage = page.value) => {
   if (!user.value) return
@@ -48,10 +47,16 @@ const fetchFeed = async (nextPage = page.value) => {
         Authorization: `Token ${user.value.token}`,
       },
     })
+
+    if (response.status === 401) {
+      clearSession()
+      return
+    }
+
     const data = await response.json()
 
     if (!response.ok) {
-      errorMessage.value = data.errors?.body?.[0] ?? 'Could not load feed.'
+      errorMessage.value = describeError(response.status, data, 'Could not load feed.')
       return
     }
 
@@ -75,10 +80,16 @@ const toggleFavorite = async (article: Article) => {
       Authorization: `Token ${user.value.token}`,
     },
   })
+
+  if (response.status === 401) {
+    clearSession()
+    return
+  }
+
   const data = await response.json()
 
   if (!response.ok) {
-    errorMessage.value = data.errors?.body?.[0] ?? 'Could not update favorite.'
+    errorMessage.value = describeError(response.status, data, 'Could not update favorite.')
     return
   }
 
@@ -95,43 +106,35 @@ onMounted(() => {
 
 <template>
   <section>
-    <h1>Feed</h1>
-    <p>Articles from followed authors.</p>
+    <header class="page-head">
+      <h1>Your feed</h1>
+      <p class="page-head-sub">The latest from authors you follow.</p>
+    </header>
 
     <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
-    <p v-if="loading">Loading feed...</p>
-    <p v-else-if="articles.length === 0">No feed articles yet.</p>
+
+    <p v-if="loading" class="loading-note">Loading feed…</p>
+
+    <EmptyState
+      v-else-if="!isLoggedIn"
+      title="Please sign in"
+      message="Sign in again to see your feed."
+    >
+      <RouterLink to="/login" class="read-more">Sign in</RouterLink>
+    </EmptyState>
+
+    <EmptyState
+      v-else-if="articles.length === 0"
+      title="Your feed is empty"
+      message="Follow some authors and their newest articles will appear here."
+    >
+      <RouterLink to="/" class="read-more">Browse all articles</RouterLink>
+    </EmptyState>
 
     <template v-else>
       <ul class="article-list">
         <li v-for="article in articles" :key="article.slug">
-          <article>
-            <h2>
-              <RouterLink :to="`/articles/${article.slug}`">
-                {{ article.title }}
-              </RouterLink>
-            </h2>
-            <p class="article-meta">
-              by
-              <RouterLink :to="`/profiles/${article.author.username}`">
-                {{ article.author.username }}
-              </RouterLink>
-              &middot; {{ formatDate(article.createdAt) }} &middot;
-              {{ article.favoritesCount }} likes
-            </p>
-            <p>{{ article.description }}</p>
-            <ul class="tag-list">
-              <li v-for="tag in article.tagList" :key="tag">
-                {{ tag }}
-              </li>
-            </ul>
-            <div class="article-actions">
-              <button type="button" class="ghost" @click="toggleFavorite(article)">
-                {{ article.favorited ? 'Unfavorite' : 'Favorite' }}
-                ({{ article.favoritesCount }})
-              </button>
-            </div>
-          </article>
+          <ArticlePreview :article="article" @toggle-favorite="toggleFavorite" />
         </li>
       </ul>
 
