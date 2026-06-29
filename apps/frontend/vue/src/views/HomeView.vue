@@ -123,20 +123,20 @@ onMounted(() => {
 
 <template>
   <section>
-    <header class="page-head page-head--with-action">
-      <div>
-        <h1>Conduit</h1>
-        <p class="page-head-sub">A place to read and share articles.</p>
-      </div>
-      <RouterLink v-if="isLoggedIn" to="/editor" class="header-action">
-        New article
-      </RouterLink>
-    </header>
-
-    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
-
     <div class="home-layout">
       <div>
+        <header class="page-head page-head--with-action">
+          <div>
+            <h1>Conduit</h1>
+            <p class="page-head-sub">A place to read and share articles.</p>
+          </div>
+          <RouterLink v-if="isLoggedIn" to="/editor" class="header-action">
+            New article
+          </RouterLink>
+        </header>
+
+        <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+
         <p v-if="loading" class="loading-note">Loading articles…</p>
 
         <template v-else-if="articles.length === 0">
