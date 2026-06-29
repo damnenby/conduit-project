@@ -213,7 +213,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+  <p v-if="errorMessage" class="error-message" role="alert">{{ errorMessage }}</p>
 
   <article v-if="article" class="article-page">
     <h1>{{ article.title }}</h1>

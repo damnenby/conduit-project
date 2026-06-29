@@ -116,7 +116,7 @@ onMounted(() => {
       </RouterLink>
     </header>
 
-    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="error-message" role="alert">{{ errorMessage }}</p>
 
     <p v-if="loading" class="loading-note">Loading feed…</p>
 

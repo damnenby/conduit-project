@@ -155,7 +155,7 @@ onMounted(() => {
     </header>
 
     <div v-if="article" class="form-card">
-      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+      <p v-if="errorMessage" class="error-message" role="alert">{{ errorMessage }}</p>
 
       <form @submit.prevent="updateArticle">
         <label>
@@ -185,6 +185,6 @@ onMounted(() => {
       </form>
     </div>
 
-    <p v-else-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+    <p v-else-if="errorMessage" class="error-message" role="alert">{{ errorMessage }}</p>
   </section>
 </template>

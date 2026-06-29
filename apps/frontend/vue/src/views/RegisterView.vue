@@ -57,7 +57,7 @@ const register = async () => {
     </header>
 
     <div class="auth-card">
-      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+      <p v-if="errorMessage" class="error-message" role="alert">{{ errorMessage }}</p>
 
       <form @submit.prevent="register">
         <label>

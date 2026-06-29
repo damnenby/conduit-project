@@ -102,8 +102,8 @@ const logoutAndGoHome = () => {
     </p>
 
     <div v-else class="form-card">
-      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
-      <p v-if="successMessage" class="success-message">{{ successMessage }}</p>
+      <p v-if="errorMessage" class="error-message" role="alert">{{ errorMessage }}</p>
+      <p v-if="successMessage" class="success-message" role="status">{{ successMessage }}</p>
 
       <form @submit.prevent="saveSettings">
         <label>

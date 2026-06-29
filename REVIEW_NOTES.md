@@ -315,3 +315,45 @@ Note (minor, not fixed): a title made of *only* non-Latin characters slugifies t
 an empty base (the slugger strips non-ASCII), relying on the numeric-suffix
 fallback for uniqueness. Harmless here; worth a transliteration step if full
 i18n slugs are ever required.
+
+## Accessibility + usability audit (branch `redesign`)
+
+Ran **axe-core** (WCAG 2.0/2.1 A & AA + best-practice) over every page in both
+logged-out and logged-in states (home, login, register, article detail, profile,
+feed, editor, settings), plus manual keyboard/focus/screen-reader checks.
+
+Real issues found and fixed:
+
+- **Links in running text relied on colour only** (WCAG 1.4.1, serious) — the
+  inline links in `.auth-footer`, `.comment-login-hint` and the session-expired
+  notice were accent-coloured with no underline. Now underlined at rest.
+- **Heading order skipped a level** on profiles (h1 → h3, moderate) — the profile
+  article-card titles are now `<h2>` (matches the Home/Feed cards).
+- **Dynamic messages weren't announced** — every `.error-message` now has
+  `role="alert"` and the Settings success message has `role="status"`, so screen
+  readers announce validation/auth feedback when it appears.
+- **No skip link** — added a "Skip to content" link (hidden until keyboard-focused)
+  targeting `<main id="main-content">`.
+- Added a `prefers-reduced-motion` reset to honour that OS setting.
+
+Already correct (verified, no change needed):
+
+- Every form input has a label (implicit wrapping `<label>`), confirmed by driving
+  the forms via Playwright `get_by_label`.
+- Landmarks present on every page (`header` / `nav[aria-label]` / `main`); exactly
+  one `<h1>` per page; `document.title` updates per route.
+- All interactive controls are real `<button>`/`<a>` (no clickable divs); favorite
+  toggles expose `aria-pressed`, profile tabs use `role="tab"` + `aria-selected`.
+- Visible keyboard focus ring on every focusable element (box-shadow), checked by
+  tabbing through the nav and forms.
+- Colour contrast passes AA (axe `color-contrast` clean).
+
+Result: **axe reports 0 violations on all pages** (app-scoped; the only axe hits in
+the raw run came from the preview tool's own injected overlay, `.panel-entry-btn`,
+not the app). `pnpm --filter vue build` PASS; full create/comment/favorite/delete
+flow re-smoked green after the changes.
+
+Known minor limitation (not fixed, would be over-engineering for this project):
+SPA route changes don't programmatically move focus to the new page's heading.
+Landmarks + the skip link mitigate it; a `router.afterEach` focus handler could be
+added if strict SR navigation parity is required.

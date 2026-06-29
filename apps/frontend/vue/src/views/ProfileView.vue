@@ -152,7 +152,7 @@ watch(
 
 <template>
   <section>
-    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="error-message" role="alert">{{ errorMessage }}</p>
 
     <header v-if="profile" class="profile-head">
       <h1>{{ profile.username }}</h1>
@@ -198,9 +198,9 @@ watch(
               </time>
               <span class="article-date">· {{ article.favoritesCount }} favorites</span>
             </p>
-            <h3 class="article-title">
+            <h2 class="article-title">
               <RouterLink :to="`/articles/${article.slug}`">{{ article.title }}</RouterLink>
-            </h3>
+            </h2>
             <p class="article-excerpt">{{ article.description }}</p>
             <RouterLink :to="`/articles/${article.slug}`" class="read-more">Read more</RouterLink>
           </article>

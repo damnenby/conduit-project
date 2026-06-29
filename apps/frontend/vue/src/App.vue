@@ -1,4 +1,6 @@
 <template>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
   <header class="site-header">
     <div class="site-header-inner">
       <RouterLink to="/" class="brand">Conduit</RouterLink>
@@ -37,7 +39,7 @@
     </div>
   </div>
 
-  <main>
+  <main id="main-content">
     <RouterView />
   </main>
 </template>
