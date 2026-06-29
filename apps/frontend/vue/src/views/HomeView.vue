@@ -123,9 +123,14 @@ onMounted(() => {
 
 <template>
   <section>
-    <header class="page-head">
-      <h1>Conduit</h1>
-      <p class="page-head-sub">A place to read and share articles.</p>
+    <header class="page-head page-head--with-action">
+      <div>
+        <h1>Conduit</h1>
+        <p class="page-head-sub">A place to read and share articles.</p>
+      </div>
+      <RouterLink v-if="isLoggedIn" to="/editor" class="header-action">
+        New article
+      </RouterLink>
     </header>
 
     <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>

@@ -166,6 +166,37 @@ aside {
   border-bottom: 1px solid var(--border);
 }
 
+/* Section header with a primary action on the right (e.g. "New article") */
+.page-head--with-action {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 24px;
+  flex-wrap: wrap;
+}
+
+.header-action {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 9px 18px;
+  border: 1px solid var(--ink);
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: #fff;
+  font-size: 0.94rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.header-action:hover {
+  background: var(--ink-hover);
+  border-color: var(--ink-hover);
+  color: #fff;
+  text-decoration: none;
+}
+
 /* ---- Site header / navbar --------------------------------------------- */
 
 .site-header {

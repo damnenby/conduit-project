@@ -4,11 +4,9 @@
       <RouterLink to="/" class="brand">Conduit</RouterLink>
 
       <nav class="site-nav" aria-label="Main navigation">
-        <RouterLink to="/" class="nav-link">Home</RouterLink>
-
         <template v-if="isLoggedIn">
+          <RouterLink to="/" class="nav-link">Home</RouterLink>
           <RouterLink to="/feed" class="nav-link">Feed</RouterLink>
-          <RouterLink to="/editor" class="nav-link nav-cta">New article</RouterLink>
           <RouterLink to="/settings" class="nav-link">Settings</RouterLink>
           <RouterLink
             v-if="user"
@@ -21,6 +19,7 @@
         </template>
 
         <template v-else>
+          <RouterLink to="/" class="nav-link">Home</RouterLink>
           <RouterLink to="/login" class="nav-link">Sign in</RouterLink>
           <RouterLink to="/register" class="nav-link nav-cta">Sign up</RouterLink>
         </template>
