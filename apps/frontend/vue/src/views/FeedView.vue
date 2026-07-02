@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { describeError } from '../composables/useApi'
+import { notifyError } from '../composables/useToast'
 import ArticlePreview from '../components/ArticlePreview.vue'
 import EmptyState from '../components/EmptyState.vue'
 
@@ -89,14 +90,13 @@ const toggleFavorite = async (article: Article) => {
   const data = await response.json()
 
   if (!response.ok) {
-    errorMessage.value = describeError(response.status, data, 'Could not update favorite.')
+    notifyError(describeError(response.status, data, 'Could not update favorite.'))
     return
   }
 
   articles.value = articles.value.map((currentArticle) =>
     currentArticle.slug === data.article.slug ? data.article : currentArticle,
   )
-  errorMessage.value = ''
 }
 
 onMounted(() => {

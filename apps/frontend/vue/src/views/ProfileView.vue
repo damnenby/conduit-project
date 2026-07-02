@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { describeError } from '../composables/useApi'
+import { notifyError } from '../composables/useToast'
 import EmptyState from '../components/EmptyState.vue'
 
 type Profile = {
@@ -104,7 +105,7 @@ const toggleFollow = async () => {
   if (!profile.value) return
 
   if (!user.value) {
-    errorMessage.value = 'Please sign in to follow authors.'
+    notifyError('Please sign in to follow authors.')
     return
   }
 
@@ -125,9 +126,8 @@ const toggleFollow = async () => {
 
   if (response.ok) {
     profile.value = data.profile
-    errorMessage.value = ''
   } else {
-    errorMessage.value = describeError(response.status, data, 'Could not update follow.')
+    notifyError(describeError(response.status, data, 'Could not update follow.'))
   }
 }
 

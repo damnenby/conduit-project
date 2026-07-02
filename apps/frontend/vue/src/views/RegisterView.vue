@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { describeError } from '../composables/useApi'
+import { notifyError } from '../composables/useToast'
 
 const router = useRouter()
 const { setUser } = useAuth()
@@ -10,13 +11,10 @@ const { setUser } = useAuth()
 const username = ref('')
 const email = ref('')
 const password = ref('')
-const errorMessage = ref('')
 
 const register = async () => {
-  errorMessage.value = ''
-
   if (password.value.length < 8) {
-    errorMessage.value = 'Password must be at least 8 characters.'
+    notifyError('Password must be at least 8 characters.')
     return
   }
 
@@ -37,14 +35,14 @@ const register = async () => {
     const data = await response.json()
 
     if (!response.ok) {
-      errorMessage.value = describeError(response.status, data, 'Could not create account.')
+      notifyError(describeError(response.status, data, 'Could not create account.'))
       return
     }
 
     setUser(data.user)
     router.push('/')
   } catch {
-    errorMessage.value = 'Could not create account.'
+    notifyError('Could not create account.')
   }
 }
 </script>
@@ -57,8 +55,6 @@ const register = async () => {
     </header>
 
     <div class="auth-card">
-      <p v-if="errorMessage" class="error-message" role="alert">{{ errorMessage }}</p>
-
       <form @submit.prevent="register">
         <label>
           Username

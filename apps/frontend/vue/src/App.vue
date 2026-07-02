@@ -42,11 +42,32 @@
   <main id="main-content">
     <RouterView />
   </main>
+
+  <div class="toast-host">
+    <div
+      v-for="toast in toasts"
+      :key="toast.id"
+      class="toast"
+      :class="`toast--${toast.kind}`"
+      :role="toast.kind === 'error' ? 'alert' : 'status'"
+    >
+      <span class="toast-message">{{ toast.message }}</span>
+      <button
+        type="button"
+        class="toast-close"
+        aria-label="Dismiss notification"
+        @click="dismissToast(toast.id)"
+      >
+        ×
+      </button>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
 import { useAuth } from './composables/useAuth'
+import { toasts, dismissToast } from './composables/useToast'
 
 const { user, isLoggedIn, sessionExpired, logout, dismissSessionExpired } = useAuth()
 </script>

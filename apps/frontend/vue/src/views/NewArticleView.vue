@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { describeError } from '../composables/useApi'
+import { notifyError } from '../composables/useToast'
 
 const router = useRouter()
 const { user, clearSession } = useAuth()
@@ -11,15 +12,12 @@ const title = ref('')
 const description = ref('')
 const body = ref('')
 const tags = ref('')
-const errorMessage = ref('')
 
 const createArticle = async () => {
   if (!user.value) return
 
-  errorMessage.value = ''
-
   if (!title.value || !description.value || !body.value) {
-    errorMessage.value = 'Title, description and body are required.'
+    notifyError('Title, description and body are required.')
     return
   }
 
@@ -53,13 +51,13 @@ const createArticle = async () => {
     const data = await response.json()
 
     if (!response.ok) {
-      errorMessage.value = describeError(response.status, data, 'Could not create article.')
+      notifyError(describeError(response.status, data, 'Could not create article.'))
       return
     }
 
     router.push(`/articles/${data.article.slug}`)
   } catch {
-    errorMessage.value = 'Could not create article.'
+    notifyError('Could not create article.')
   }
 }
 </script>
@@ -72,8 +70,6 @@ const createArticle = async () => {
     </header>
 
     <div class="form-card">
-      <p v-if="errorMessage" class="error-message" role="alert">{{ errorMessage }}</p>
-
       <form @submit.prevent="createArticle">
         <label>
           Title

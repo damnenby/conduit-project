@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { describeError } from '../composables/useApi'
+import { notifyError, notifySuccess } from '../composables/useToast'
 
 const router = useRouter()
 const { user, isLoggedIn, setUser, logout, clearSession } = useAuth()
@@ -12,8 +13,6 @@ const email = ref('')
 const password = ref('')
 const bio = ref('')
 const image = ref('')
-const errorMessage = ref('')
-const successMessage = ref('')
 
 watch(
   user,
@@ -30,11 +29,8 @@ watch(
 const saveSettings = async () => {
   if (!user.value) return
 
-  errorMessage.value = ''
-  successMessage.value = ''
-
   if (password.value && password.value.length < 8) {
-    errorMessage.value = 'Password must be at least 8 characters.'
+    notifyError('Password must be at least 8 characters.')
     return
   }
 
@@ -73,14 +69,14 @@ const saveSettings = async () => {
     const data = await response.json()
 
     if (!response.ok) {
-      errorMessage.value = describeError(response.status, data, 'Could not update settings.')
+      notifyError(describeError(response.status, data, 'Could not update settings.'))
       return
     }
 
     setUser(data.user)
-    successMessage.value = 'Settings saved.'
+    notifySuccess('Settings saved.')
   } catch {
-    errorMessage.value = 'Could not update settings.'
+    notifyError('Could not update settings.')
   }
 }
 
@@ -102,9 +98,6 @@ const logoutAndGoHome = () => {
     </p>
 
     <div v-else class="form-card">
-      <p v-if="errorMessage" class="error-message" role="alert">{{ errorMessage }}</p>
-      <p v-if="successMessage" class="success-message" role="status">{{ successMessage }}</p>
-
       <form @submit.prevent="saveSettings">
         <label>
           Username

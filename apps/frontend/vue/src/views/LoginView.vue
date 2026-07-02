@@ -3,17 +3,15 @@ import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { describeError } from '../composables/useApi'
+import { notifyError } from '../composables/useToast'
 
 const router = useRouter()
 const { setUser } = useAuth()
 
 const email = ref('')
 const password = ref('')
-const errorMessage = ref('')
 
 const login = async () => {
-  errorMessage.value = ''
-
   try {
     const response = await fetch('/api/users/login', {
       method: 'POST',
@@ -30,14 +28,14 @@ const login = async () => {
     const data = await response.json()
 
     if (!response.ok) {
-      errorMessage.value = describeError(response.status, data, 'Could not sign in.')
+      notifyError(describeError(response.status, data, 'Could not sign in.'))
       return
     }
 
     setUser(data.user)
     router.push('/')
   } catch {
-    errorMessage.value = 'Could not sign in.'
+    notifyError('Could not sign in.')
   }
 }
 </script>
@@ -50,8 +48,6 @@ const login = async () => {
     </header>
 
     <div class="auth-card">
-      <p v-if="errorMessage" class="error-message" role="alert">{{ errorMessage }}</p>
-
       <form @submit.prevent="login">
         <label>
           Email

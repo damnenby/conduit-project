@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { describeError } from '../composables/useApi'
+import { notifyError } from '../composables/useToast'
 
 type Article = {
   slug: string
@@ -83,7 +84,7 @@ const toggleFavorite = async () => {
   if (!article.value) return
 
   if (!user.value) {
-    errorMessage.value = 'Please sign in to favorite articles.'
+    notifyError('Please sign in to favorite articles.')
     return
   }
 
@@ -104,9 +105,8 @@ const toggleFavorite = async () => {
 
   if (response.ok) {
     article.value = data.article
-    errorMessage.value = ''
   } else {
-    errorMessage.value = describeError(response.status, data, 'Could not update favorite.')
+    notifyError(describeError(response.status, data, 'Could not update favorite.'))
   }
 }
 
@@ -131,7 +131,7 @@ const deleteArticle = async () => {
   }
 
   const data = await response.json()
-  errorMessage.value = describeError(response.status, data, 'Could not delete article.')
+  notifyError(describeError(response.status, data, 'Could not delete article.'))
 }
 
 const postComment = async () => {
@@ -140,7 +140,7 @@ const postComment = async () => {
   const commentBody = newComment.value.trim()
 
   if (!commentBody) {
-    errorMessage.value = 'Comment body is required.'
+    notifyError('Comment body is required.')
     return
   }
 
@@ -166,15 +166,14 @@ const postComment = async () => {
     const data = await response.json()
 
     if (!response.ok) {
-      errorMessage.value = describeError(response.status, data, 'Could not post comment.')
+      notifyError(describeError(response.status, data, 'Could not post comment.'))
       return
     }
 
     comments.value = [data.comment, ...comments.value]
     newComment.value = ''
-    errorMessage.value = ''
   } catch {
-    errorMessage.value = 'Could not post comment.'
+    notifyError('Could not post comment.')
   }
 }
 
@@ -193,7 +192,6 @@ const deleteComment = async (commentId: number) => {
 
   if (response.ok) {
     comments.value = comments.value.filter((comment) => comment.id !== commentId)
-    errorMessage.value = ''
     return
   }
 
@@ -203,7 +201,7 @@ const deleteComment = async (commentId: number) => {
   }
 
   const data = await response.json()
-  errorMessage.value = describeError(response.status, data, 'Could not delete comment.')
+  notifyError(describeError(response.status, data, 'Could not delete comment.'))
 }
 
 onMounted(() => {

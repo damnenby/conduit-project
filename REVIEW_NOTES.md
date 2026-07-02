@@ -357,3 +357,36 @@ Known minor limitation (not fixed, would be over-engineering for this project):
 SPA route changes don't programmatically move focus to the new page's heading.
 Landmarks + the skip link mitigate it; a `router.afterEach` focus handler could be
 added if strict SR navigation parity is required.
+
+## Toast notifications for action feedback (branch `redesign`)
+
+Action feedback no longer renders as inline banners inside the page. Validation
+errors ("Comment body is required.", "Password must be at least 8 characters."),
+sign-in prompts, failed actions and the "Settings saved." confirmation now appear
+as small dismissable **toasts in the bottom-right corner** that stack and
+auto-hide after ~4.5 s. Inline `.error-message` banners remain only for page-load
+failures (could not load article / articles / profile / feed), where a vanishing
+toast would leave a blank page.
+
+Kept deliberately simple (student-style, no toast "system"):
+
+- `src/composables/useToast.ts` — ~25 lines: a module-level `toasts` ref plus
+  `notifyError` / `notifySuccess` / `dismissToast` functions. No plugin, no
+  provide/inject, no extra component — the markup is a small `v-for` block in
+  `App.vue`, styled by one CSS section (`.toast-host` / `.toast`).
+- Views just import `notifyError` and call it where they previously assigned
+  `errorMessage.value`.
+
+Accessibility: error toasts have `role="alert"`, the success toast
+`role="status"`, the close button an `aria-label`; the fade-in respects the
+`prefers-reduced-motion` reset. Text contrast passes AA (7.2:1).
+
+Verification after the change (all in-browser against the Docker stack):
+
+| Check | Result |
+| --- | --- |
+| Toast behaviour (12 checks: appear/role/position/auto-hide/close/mobile) | PASS |
+| Full flow sweep (register→login→CRUD→comments→favorites→follow/feed→tags→pagination→settings→invalid token→XSS→console/network) | PASS (31/31; two initial tag-filter "fails" were test-script races, re-verified green) |
+| axe-core, 10 pages + toast-visible state, scoped to `#app` | 0 violations (one transient hit was axe sampling mid fade-in; clean once settled) |
+| Responsive overflow, 7 pages × 375/768/1280 (incl. edge articles) | PASS, home collapses to one column |
+| `pnpm --filter vue build`, `pnpm --filter nest build`, eslint/oxlint | PASS |
