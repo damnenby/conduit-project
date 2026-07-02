@@ -390,3 +390,12 @@ Verification after the change (all in-browser against the Docker stack):
 | axe-core, 10 pages + toast-visible state, scoped to `#app` | 0 violations (one transient hit was axe sampling mid fade-in; clean once settled) |
 | Responsive overflow, 7 pages × 375/768/1280 (incl. edge articles) | PASS, home collapses to one column |
 | `pnpm --filter vue build`, `pnpm --filter nest build`, eslint/oxlint | PASS |
+
+A follow-up code-review pass over the whole frontend source (every view,
+composable, component, `style.css` end to end, plus a class-usage census in both
+directions) found no logic issues and no leftover debug code; it removed three
+pieces of dead CSS orphaned by the toast change: the unused
+`.page-head--bordered` modifier, the `.success-message` rules (success feedback
+is toast-only now; the shared block was folded into a single `.error-message`
+rule with identical rendering, verified in-browser), and a stray `.tag` selector
+(tags are styled via `.tag-list li`).
