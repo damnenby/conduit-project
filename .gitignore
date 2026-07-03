@@ -8,6 +8,5 @@ dist
 *.sqlite3
 .DS_Store
 .agents/
-.claude/
 skills-lock.json
 DESIGN.md
