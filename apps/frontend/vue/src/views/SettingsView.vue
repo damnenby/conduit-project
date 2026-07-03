@@ -2,17 +2,17 @@
 import { ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
+import { describeError } from '../composables/useApi'
+import { notifyError, notifySuccess } from '../composables/useToast'
 
 const router = useRouter()
-const { user, isLoggedIn, setUser, logout } = useAuth()
+const { user, isLoggedIn, setUser, logout, clearSession } = useAuth()
 
 const username = ref('')
 const email = ref('')
 const password = ref('')
 const bio = ref('')
 const image = ref('')
-const errorMessage = ref('')
-const successMessage = ref('')
 
 watch(
   user,
@@ -29,11 +29,8 @@ watch(
 const saveSettings = async () => {
   if (!user.value) return
 
-  errorMessage.value = ''
-  successMessage.value = ''
-
   if (password.value && password.value.length < 8) {
-    errorMessage.value = 'Password must be at least 8 characters.'
+    notifyError('Password must be at least 8 characters.')
     return
   }
 
@@ -63,17 +60,23 @@ const saveSettings = async () => {
       },
       body: JSON.stringify({ user: updateData }),
     })
+
+    if (response.status === 401) {
+      clearSession()
+      return
+    }
+
     const data = await response.json()
 
     if (!response.ok) {
-      errorMessage.value = data.errors?.body?.[0] ?? 'Could not update settings.'
+      notifyError(describeError(response.status, data, 'Could not update settings.'))
       return
     }
 
     setUser(data.user)
-    successMessage.value = 'Settings saved.'
+    notifySuccess('Settings saved.')
   } catch {
-    errorMessage.value = 'Could not update settings.'
+    notifyError('Could not update settings.')
   }
 }
 
@@ -85,43 +88,52 @@ const logoutAndGoHome = () => {
 
 <template>
   <section>
-    <h1>Settings</h1>
+    <header class="page-head">
+      <h1>Settings</h1>
+      <p class="page-head-sub">Update your profile and account details.</p>
+    </header>
 
     <p v-if="!isLoggedIn">
-      Please <RouterLink to="/login">login</RouterLink> to change your settings.
+      Please <RouterLink to="/login">sign in</RouterLink> to change your settings.
     </p>
 
-    <form v-else @submit.prevent="saveSettings">
-      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
-      <p v-if="successMessage" class="success-message">{{ successMessage }}</p>
+    <div v-else class="form-card">
+      <form @submit.prevent="saveSettings">
+        <label>
+          Username
+          <input v-model="username" autocomplete="username" required />
+        </label>
 
-      <label>
-        Username
-        <input v-model="username" required />
-      </label>
+        <label>
+          Email
+          <input v-model="email" type="email" autocomplete="email" required />
+        </label>
 
-      <label>
-        Email
-        <input v-model="email" type="email" required />
-      </label>
+        <label>
+          Bio
+          <textarea v-model="bio" rows="4" placeholder="Tell readers about yourself"></textarea>
+        </label>
 
-      <label>
-        Bio
-        <textarea v-model="bio" rows="4"></textarea>
-      </label>
+        <label>
+          Image URL
+          <input v-model="image" placeholder="https://…" />
+        </label>
 
-      <label>
-        Image URL
-        <input v-model="image" />
-      </label>
+        <label>
+          New password
+          <input
+            v-model="password"
+            type="password"
+            autocomplete="new-password"
+            placeholder="Leave blank to keep current"
+          />
+        </label>
 
-      <label>
-        New password
-        <input v-model="password" type="password" />
-      </label>
-
-      <button type="submit">Save settings</button>
-      <button type="button" class="ghost" @click="logoutAndGoHome">Logout</button>
-    </form>
+        <div class="form-actions">
+          <button type="submit">Save settings</button>
+          <button type="button" class="ghost" @click="logoutAndGoHome">Sign out</button>
+        </div>
+      </form>
+    </div>
   </section>
 </template>

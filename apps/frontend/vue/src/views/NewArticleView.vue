@@ -2,23 +2,22 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
+import { describeError } from '../composables/useApi'
+import { notifyError } from '../composables/useToast'
 
 const router = useRouter()
-const { user } = useAuth()
+const { user, clearSession } = useAuth()
 
 const title = ref('')
 const description = ref('')
 const body = ref('')
 const tags = ref('')
-const errorMessage = ref('')
 
 const createArticle = async () => {
   if (!user.value) return
 
-  errorMessage.value = ''
-
   if (!title.value || !description.value || !body.value) {
-    errorMessage.value = 'Title, description and body are required.'
+    notifyError('Title, description and body are required.')
     return
   }
 
@@ -43,48 +42,57 @@ const createArticle = async () => {
         },
       }),
     })
+
+    if (response.status === 401) {
+      clearSession()
+      return
+    }
+
     const data = await response.json()
 
     if (!response.ok) {
-      errorMessage.value = data.errors?.body?.[0] ?? 'Could not create article.'
+      notifyError(describeError(response.status, data, 'Could not create article.'))
       return
     }
 
     router.push(`/articles/${data.article.slug}`)
   } catch {
-    errorMessage.value = 'Could not create article.'
+    notifyError('Could not create article.')
   }
 }
 </script>
 
 <template>
   <section>
-    <h1>New Article</h1>
+    <header class="page-head">
+      <h1>New article</h1>
+      <p class="page-head-sub">Write and publish a new post.</p>
+    </header>
 
-    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+    <div class="form-card">
+      <form @submit.prevent="createArticle">
+        <label>
+          Title
+          <input v-model="title" placeholder="Article title" required />
+        </label>
 
-    <form @submit.prevent="createArticle">
-      <label>
-        Title
-        <input v-model="title" required />
-      </label>
+        <label>
+          Description
+          <input v-model="description" placeholder="What is this article about?" required />
+        </label>
 
-      <label>
-        Description
-        <input v-model="description" required />
-      </label>
+        <label>
+          Body
+          <textarea v-model="body" rows="10" placeholder="Write your article…" required></textarea>
+        </label>
 
-      <label>
-        Body
-        <textarea v-model="body" rows="8" required></textarea>
-      </label>
+        <label>
+          Tags
+          <input v-model="tags" placeholder="vue, web, conduit" />
+        </label>
 
-      <label>
-        Tags
-        <input v-model="tags" placeholder="vue, web, conduit" />
-      </label>
-
-      <button type="submit">Publish article</button>
-    </form>
+        <button type="submit">Publish article</button>
+      </form>
+    </div>
   </section>
 </template>

@@ -2,6 +2,8 @@
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
+import { describeError } from '../composables/useApi'
+import { notifyError } from '../composables/useToast'
 
 type Article = {
   slug: string
@@ -16,7 +18,7 @@ type Article = {
 
 const route = useRoute()
 const router = useRouter()
-const { user } = useAuth()
+const { user, clearSession } = useAuth()
 
 const article = ref<Article | null>(null)
 const title = ref('')
@@ -32,7 +34,7 @@ const loadArticle = async () => {
     const data = await response.json()
 
     if (!response.ok) {
-      errorMessage.value = data.errors?.body?.[0] ?? 'Could not load article.'
+      errorMessage.value = describeError(response.status, data, 'Could not load article.')
       return
     }
 
@@ -54,15 +56,13 @@ const loadArticle = async () => {
 const updateArticle = async () => {
   if (!article.value || !user.value) return
 
-  errorMessage.value = ''
-
   if (article.value.author.username !== user.value.username) {
-    errorMessage.value = 'You can only edit your own articles.'
+    notifyError('You can only edit your own articles.')
     return
   }
 
   if (!title.value || !description.value || !body.value) {
-    errorMessage.value = 'Title, description and body are required.'
+    notifyError('Title, description and body are required.')
     return
   }
 
@@ -87,26 +87,30 @@ const updateArticle = async () => {
         },
       }),
     })
+
+    if (response.status === 401) {
+      clearSession()
+      return
+    }
+
     const data = await response.json()
 
     if (!response.ok) {
-      errorMessage.value = data.errors?.body?.[0] ?? 'Could not update article.'
+      notifyError(describeError(response.status, data, 'Could not update article.'))
       return
     }
 
     router.push(`/articles/${data.article.slug}`)
   } catch {
-    errorMessage.value = 'Could not update article.'
+    notifyError('Could not update article.')
   }
 }
 
 const deleteArticle = async () => {
   if (!article.value || !user.value) return
 
-  errorMessage.value = ''
-
   if (article.value.author.username !== user.value.username) {
-    errorMessage.value = 'You can only delete your own articles.'
+    notifyError('You can only delete your own articles.')
     return
   }
 
@@ -123,10 +127,15 @@ const deleteArticle = async () => {
       return
     }
 
+    if (response.status === 401) {
+      clearSession()
+      return
+    }
+
     const data = await response.json()
-    errorMessage.value = data.errors?.body?.[0] ?? 'Could not delete article.'
+    notifyError(describeError(response.status, data, 'Could not delete article.'))
   } catch {
-    errorMessage.value = 'Could not delete article.'
+    notifyError('Could not delete article.')
   }
 }
 
@@ -137,33 +146,40 @@ onMounted(() => {
 
 <template>
   <section>
-    <h1>Edit Article</h1>
+    <header class="page-head">
+      <h1>Edit article</h1>
+      <p class="page-head-sub">Update or remove your post.</p>
+    </header>
 
-    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+    <div v-if="article" class="form-card">
+      <form @submit.prevent="updateArticle">
+        <label>
+          Title
+          <input v-model="title" required />
+        </label>
 
-    <form v-if="article" @submit.prevent="updateArticle">
-      <label>
-        Title
-        <input v-model="title" required />
-      </label>
+        <label>
+          Description
+          <input v-model="description" required />
+        </label>
 
-      <label>
-        Description
-        <input v-model="description" required />
-      </label>
+        <label>
+          Body
+          <textarea v-model="body" rows="10" required></textarea>
+        </label>
 
-      <label>
-        Body
-        <textarea v-model="body" rows="8" required></textarea>
-      </label>
+        <label>
+          Tags
+          <input v-model="tags" placeholder="vue, web, conduit" />
+        </label>
 
-      <label>
-        Tags
-        <input v-model="tags" />
-      </label>
+        <div class="form-actions">
+          <button type="submit">Update article</button>
+          <button type="button" class="danger" @click="deleteArticle">Delete article</button>
+        </div>
+      </form>
+    </div>
 
-      <button type="submit">Update article</button>
-      <button type="button" class="danger" @click="deleteArticle">Delete article</button>
-    </form>
+    <p v-else-if="errorMessage" class="error-message" role="alert">{{ errorMessage }}</p>
   </section>
 </template>

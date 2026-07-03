@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
+import { describeError } from '../composables/useApi'
+import { notifyError } from '../composables/useToast'
 
 const router = useRouter()
 const { setUser } = useAuth()
@@ -9,13 +11,10 @@ const { setUser } = useAuth()
 const username = ref('')
 const email = ref('')
 const password = ref('')
-const errorMessage = ref('')
 
 const register = async () => {
-  errorMessage.value = ''
-
   if (password.value.length < 8) {
-    errorMessage.value = 'Password must be at least 8 characters.'
+    notifyError('Password must be at least 8 characters.')
     return
   }
 
@@ -36,41 +35,54 @@ const register = async () => {
     const data = await response.json()
 
     if (!response.ok) {
-      errorMessage.value = data.errors?.body?.[0] ?? 'Could not register.'
+      notifyError(describeError(response.status, data, 'Could not create account.'))
       return
     }
 
     setUser(data.user)
     router.push('/')
   } catch {
-    errorMessage.value = 'Could not register.'
+    notifyError('Could not create account.')
   }
 }
 </script>
 
 <template>
-  <section>
-    <h1>Register</h1>
+  <section class="auth-shell">
+    <header class="page-head">
+      <h1>Create your account</h1>
+      <p class="page-head-sub">Join Conduit to write and share articles.</p>
+    </header>
 
-    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+    <div class="auth-card">
+      <form @submit.prevent="register">
+        <label>
+          Username
+          <input v-model="username" autocomplete="username" required />
+        </label>
 
-    <form @submit.prevent="register">
-      <label>
-        Username
-        <input v-model="username" required />
-      </label>
+        <label>
+          Email
+          <input v-model="email" type="email" autocomplete="email" required />
+        </label>
 
-      <label>
-        Email
-        <input v-model="email" type="email" required />
-      </label>
+        <label>
+          Password
+          <input
+            v-model="password"
+            type="password"
+            autocomplete="new-password"
+            minlength="8"
+            required
+          />
+        </label>
 
-      <label>
-        Password
-        <input v-model="password" type="password" required />
-      </label>
+        <button type="submit">Create account</button>
+      </form>
+    </div>
 
-      <button type="submit">Register</button>
-    </form>
+    <p class="auth-footer">
+      Already have an account? <RouterLink to="/login">Sign in</RouterLink>
+    </p>
   </section>
 </template>

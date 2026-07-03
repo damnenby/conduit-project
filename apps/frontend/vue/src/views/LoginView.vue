@@ -1,18 +1,17 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
+import { describeError } from '../composables/useApi'
+import { notifyError } from '../composables/useToast'
 
 const router = useRouter()
 const { setUser } = useAuth()
 
 const email = ref('')
 const password = ref('')
-const errorMessage = ref('')
 
 const login = async () => {
-  errorMessage.value = ''
-
   try {
     const response = await fetch('/api/users/login', {
       method: 'POST',
@@ -29,36 +28,48 @@ const login = async () => {
     const data = await response.json()
 
     if (!response.ok) {
-      errorMessage.value = data.errors?.body?.[0] ?? 'Could not login.'
+      notifyError(describeError(response.status, data, 'Could not sign in.'))
       return
     }
 
     setUser(data.user)
     router.push('/')
   } catch {
-    errorMessage.value = 'Could not login.'
+    notifyError('Could not sign in.')
   }
 }
 </script>
 
 <template>
-  <section>
-    <h1>Login</h1>
+  <section class="auth-shell">
+    <header class="page-head">
+      <h1>Sign in</h1>
+      <p class="page-head-sub">Welcome back to Conduit.</p>
+    </header>
 
-    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+    <div class="auth-card">
+      <form @submit.prevent="login">
+        <label>
+          Email
+          <input v-model="email" type="email" autocomplete="email" required />
+        </label>
 
-    <form @submit.prevent="login">
-      <label>
-        Email
-        <input v-model="email" type="email" required />
-      </label>
+        <label>
+          Password
+          <input
+            v-model="password"
+            type="password"
+            autocomplete="current-password"
+            required
+          />
+        </label>
 
-      <label>
-        Password
-        <input v-model="password" type="password" required />
-      </label>
+        <button type="submit">Sign in</button>
+      </form>
+    </div>
 
-      <button type="submit">Login</button>
-    </form>
+    <p class="auth-footer">
+      Need an account? <RouterLink to="/register">Create one</RouterLink>
+    </p>
   </section>
 </template>
