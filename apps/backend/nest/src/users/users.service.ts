@@ -13,6 +13,8 @@ type StoredUser = {
   passwordHash: string;
 };
 
+const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -64,6 +66,10 @@ export class UsersService {
       );
     }
 
+    if (!isValidEmail(email)) {
+      throw apiError(['Email must be valid'], HttpStatus.UNPROCESSABLE_ENTITY);
+    }
+
     if (await this.prisma.user.findUnique({ where: { email } })) {
       throw apiError(['Email is already used'], HttpStatus.UNPROCESSABLE_ENTITY);
     }
@@ -99,6 +105,10 @@ export class UsersService {
         ['Email and password are required'],
         HttpStatus.UNPROCESSABLE_ENTITY,
       );
+    }
+
+    if (!isValidEmail(email)) {
+      throw apiError(['Email must be valid'], HttpStatus.UNPROCESSABLE_ENTITY);
     }
 
     const user = await this.prisma.user.findUnique({
@@ -184,6 +194,10 @@ export class UsersService {
 
     if (email !== undefined && !email) {
       throw apiError(['Email cannot be empty'], HttpStatus.UNPROCESSABLE_ENTITY);
+    }
+
+    if (email !== undefined && !isValidEmail(email)) {
+      throw apiError(['Email must be valid'], HttpStatus.UNPROCESSABLE_ENTITY);
     }
 
     if (username !== undefined && !username) {

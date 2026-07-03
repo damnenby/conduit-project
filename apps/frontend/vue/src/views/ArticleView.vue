@@ -113,6 +113,10 @@ const toggleFavorite = async () => {
 const deleteArticle = async () => {
   if (!article.value || !user.value) return
 
+  if (!window.confirm(`Delete “${article.value.title}”? This cannot be undone.`)) {
+    return
+  }
+
   const response = await fetch(`/api/articles/${article.value.slug}`, {
     method: 'DELETE',
     headers: {
@@ -179,6 +183,10 @@ const postComment = async () => {
 
 const deleteComment = async (commentId: number) => {
   if (!article.value || !user.value) return
+
+  if (!window.confirm('Delete this comment? This cannot be undone.')) {
+    return
+  }
 
   const response = await fetch(
     `/api/articles/${article.value.slug}/comments/${commentId}`,

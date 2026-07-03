@@ -23,6 +23,6 @@ make the basic parts work, and after that I can improve the code and the design.
 - [x] Make the app usable on mobile.
 - [x] Add Docker setup.
 - [x] Update the README with how to run the project.
-- [ ] Test the main things manually one more time before submitting.
+- [x] Test the main things manually one more time before submitting.
 
 I will try to do this in small steps and commit after each finished part.

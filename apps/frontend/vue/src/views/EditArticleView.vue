@@ -114,6 +114,10 @@ const deleteArticle = async () => {
     return
   }
 
+  if (!window.confirm(`Delete “${article.value.title}”? This cannot be undone.`)) {
+    return
+  }
+
   try {
     const response = await fetch(`/api/articles/${article.value.slug}`, {
       method: 'DELETE',

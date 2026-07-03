@@ -164,11 +164,10 @@ watch(
     </header>
 
     <section>
-      <div class="profile-tabs" role="tablist" aria-label="Profile articles">
+      <div class="profile-tabs" aria-label="Profile article filter">
         <button
           type="button"
-          role="tab"
-          :aria-selected="activeTab === 'articles'"
+          :aria-pressed="activeTab === 'articles'"
           :class="{ active: activeTab === 'articles' }"
           @click="selectTab('articles')"
         >
@@ -176,8 +175,7 @@ watch(
         </button>
         <button
           type="button"
-          role="tab"
-          :aria-selected="activeTab === 'favorited'"
+          :aria-pressed="activeTab === 'favorited'"
           :class="{ active: activeTab === 'favorited' }"
           @click="selectTab('favorited')"
         >

@@ -442,9 +442,6 @@ components:
         JWT token sent as `Authorization: Token <jwt>`.
         Note the literal prefix `Token ` (not `Bearer`).
 
-  security:
-    - tokenAuth: []
-
   parameters:
     Username:
       name: username

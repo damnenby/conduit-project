@@ -11,8 +11,8 @@ personal feed of the authors they follow.
 
 | Name | Matrikelnummer |
 | --- | --- |
-| _TODO: team member 1_ | _TODO_ |
-| _TODO: team member 2_ | _TODO_ |
+| Valentyn Zhernovoi | 20474 |
+| Moafk Al Masre | 21755 |
 
 ## Tech stack
 

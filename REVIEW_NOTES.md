@@ -399,3 +399,84 @@ pieces of dead CSS orphaned by the toast change: the unused
 is toast-only now; the shared block was folded into a single `.error-message`
 rule with identical rendering, verified in-browser), and a stray `.tag` selector
 (tags are styled via `.tag-list li`).
+
+## Final submission audit (2026-07-03)
+
+This audit was run against the matching repository at
+`/Users/user/Documents/conduit-project`. The requested working directory
+`/Users/user/Documents/conduit-app` is an empty, separate Git repository with no
+commits; it was left untouched.
+
+### Real issues found and fixed
+
+- **OpenAPI validity:** removed an invalid `components.security` entry.
+  Top-level `security` remains the global default, while public and optional-auth
+  operations keep their explicit overrides.
+- **OpenAPI email contract:** registration, login, and current-user updates now
+  reject malformed email addresses with `422` and the standard
+  `{ errors: { body } }` response.
+- **Destructive actions:** article and comment deletion now require a native,
+  keyboard-accessible confirmation. Cancel and confirm paths were both
+  browser-tested.
+- **Profile filter semantics:** replaced incomplete ARIA tab semantics with
+  ordinary buttons using `aria-pressed`. The controls do not implement tab
+  keyboard behavior, so presenting them as an ARIA tablist was misleading.
+- **Dependency/security hygiene:** updated Vite to a patched release; pinned
+  patched transitive versions of Multer, Hono, `fast-uri`, `qs`,
+  `shell-quote`, and `brace-expansion`; removed unused Vue JSX and Vue DevTools
+  plugins. The Docker-served frontend no longer exposes the development
+  inspector.
+
+### Fresh verification evidence
+
+| Check | Result |
+| --- | --- |
+| `corepack pnpm install --frozen-lockfile` | PASS |
+| NestJS type-check/build | PASS |
+| Vue type-check/production build | PASS |
+| oxlint + ESLint (read-only runs) | PASS, 0 findings |
+| Redocly OpenAPI validation | PASS; valid document, 32 non-blocking documentation-style warnings |
+| OpenAPI vs served NestJS routes | MATCH, 20 operations vs 20 routes |
+| Isolated clean-volume Docker build/start | PASS; backend healthy, frontend started |
+| API contract/security smoke | PASS, 41 checks |
+| Chromium UI flow sweep | PASS, 9 end-to-end groups |
+| Responsive overflow checks | PASS at 375, 768, and 1280 px |
+| axe-core WCAG sweep | PASS, 0 violations across 11 public/authenticated desktop/mobile pages |
+| Dependency audit | 0 moderate/high/critical; 1 low esbuild advisory remains |
+
+The API sweep covered health, registration/login/current-user update, invalid
+email validation, missing/invalid/wrong-scheme tokens, optional authentication,
+profiles, follow/self-follow/unfollow, article CRUD, ownership failures,
+feed, favorites, comments, tags, 201/200/204/401/403/404/422 statuses, and the
+shared error shape. The browser sweep covered registration, persisted login
+state, create/detail/edit/delete, comments, favorites, settings feedback,
+followed-author feed, confirmation cancel/accept paths, invalid-token recovery,
+semantic labels/focus, and responsive layout.
+
+Test data lived in an isolated Compose project/volume, which was deleted after
+the sweep. The normal Compose project was then rebuilt and restarted with its
+original volume preserved.
+
+### Remaining submission risks
+
+- `README.md` now contains both team-member names and Matrikelnummern. The team
+  should verify those user-provided values once more before submission.
+- **Blocking repository setup:** the only configured remote is currently
+  `https://github.com/damnenby/conduit-project.git`, while the assignment
+  requires a GitLab repository link. Create/confirm the GitLab project and push
+  this repository there manually before submitting.
+- The supplied working-directory path points to the empty `conduit-app`
+  repository, while the real project is `conduit-project`. Confirm the GitLab
+  submission link targets the latter.
+- The repository still has no permanent automated test suite. The comprehensive
+  API/browser checks above were throwaway audit harnesses.
+- Redocly's 32 warnings request optional metadata such as operation IDs, tag
+  descriptions, a license, and generic 4xx responses. They do not make the
+  document invalid and were not expanded this close to submission.
+- `pnpm audit` reports one low-severity esbuild development-server advisory that
+  applies to Windows. The submitted Compose runtime runs the Vite server inside
+  a Linux container; there is no patched esbuild version inside Vite's current
+  supported range yet.
+- The documented project-scope limitations remain: TypeScript/SWC backend
+  runtime, Vite dev server in Docker, SQLite single-writer behavior, and a
+  Google Font with local serif fallbacks.
