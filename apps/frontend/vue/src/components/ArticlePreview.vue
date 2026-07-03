@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import UserAvatar from './UserAvatar.vue'
 
 type Article = {
   slug: string
@@ -11,6 +12,7 @@ type Article = {
   favoritesCount: number
   author: {
     username: string
+    image: string | null
   }
 }
 
@@ -35,7 +37,12 @@ const formatDate = (date: string) =>
     <div class="article-preview-head">
       <p class="article-byline">
         <RouterLink :to="`/profiles/${article.author.username}`" class="article-author">
-          {{ article.author.username }}
+          <UserAvatar
+            :image="article.author.image"
+            :username="article.author.username"
+            size="small"
+          />
+          <span>{{ article.author.username }}</span>
         </RouterLink>
         <time class="article-date" :datetime="article.createdAt">
           {{ formatDate(article.createdAt) }}

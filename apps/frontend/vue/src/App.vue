@@ -15,6 +15,7 @@
             :to="`/profiles/${user.username}`"
             class="nav-link nav-user"
           >
+            <UserAvatar :image="user.image" :username="user.username" size="small" />
             {{ user.username }}
           </RouterLink>
           <button type="button" class="nav-logout" @click="logout">Sign out</button>
@@ -68,6 +69,7 @@
 import { RouterLink, RouterView } from 'vue-router'
 import { useAuth } from './composables/useAuth'
 import { toasts, dismissToast } from './composables/useToast'
+import UserAvatar from './components/UserAvatar.vue'
 
 const { user, isLoggedIn, sessionExpired, logout, dismissSessionExpired } = useAuth()
 </script>

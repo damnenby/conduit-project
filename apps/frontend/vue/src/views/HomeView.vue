@@ -17,6 +17,7 @@ type Article = {
   favoritesCount: number
   author: {
     username: string
+    image: string | null
   }
 }
 

@@ -193,7 +193,7 @@ card, tag, form, and alert styles rather than one-off styling.
 - The Newsreader heading font loads from Google Fonts; offline it falls back to
   Georgia/Iowan Old Style (still editorial, intentional).
 
-## Full Dockerized browser test sweep (branch `redesign`)
+## Full Dockerized browser test sweep
 
 End-to-end testing of the redesigned app running under **Docker Compose**
 (`docker compose up -d --build`: backend healthy on `:3000`, frontend dev server
@@ -202,14 +202,10 @@ on `:5173`, `/api` proxied to the backend). Driven with real headless-Chromium
 
 ### How it was tested
 
-- A multi-agent pass was attempted first but was cut off by an account session
-  limit. Its draft scripts assumed the wrong URL scheme (`/article/`,`/profile/`
-  singular) — the app uses **plural** `/articles/`, `/profiles/` — which produced
-  a batch of false "bugs" (e.g. "Read more doesn't navigate", "no h1 on article",
-  "Follow button missing"). All were traced to that bad assumption plus a few
-  selector mistakes (checking `aria-disabled` instead of the native `disabled`
-  attribute; not recognising wrapping `<label>` implicit labels; asserting on a
-  client-side route before the SPA's `onMounted` fetch resolved).
+- Early draft browser scripts assumed singular `/article/` and `/profile/`
+  routes, while the application uses plural `/articles/` and `/profiles/`.
+  Together with a few selector and timing mistakes, this produced false
+  failures that were corrected before the final sweep.
 - Findings were then re-verified by hand with correct routes/selectors and proper
   waits. **No real bug survived verification** — all were test-script artifacts.
 
@@ -480,3 +476,112 @@ original volume preserved.
 - The documented project-scope limitations remain: TypeScript/SWC backend
   runtime, Vite dev server in Docker, SQLite single-writer behavior, and a
   Google Font with local serif fallbacks.
+
+## Demo community + stale-session follow-up (2026-07-03)
+
+- Added an idempotent `scripts/seed-demo.mjs` script and local demo credential
+  reference in `DEMO_USERS.md`.
+- Seeded 16 mock users, 32 varied articles, 64 follows, 96 favorites,
+  96 comments, and 68 tags through the public API.
+- Fixed stale browser sessions after a local database reset. The router now
+  validates the stored identity against `/api/user` before navigation and signs
+  out if the token is invalid, the user is gone, or the token resolves to a
+  different username/email.
+- Invalid JSON or malformed user data in `localStorage` is now discarded safely
+  instead of breaking app startup.
+- Missing public profiles now show one clear “Profile unavailable” state without
+  article tabs or a misleading empty-article message.
+
+Fresh verification:
+
+- Vue type-check/build, oxlint, and ESLint: PASS.
+- Docker Compose rebuild: PASS; backend healthy and frontend running.
+- Missing public profile: one heading + one 404 alert, no profile tabs.
+- Stale-own-profile reproduction: log in as a temporary user, delete that user
+  from SQLite, reload the profile route → redirected to `/login`, local session
+  cleared, calm session-expired notice shown.
+- Valid `defense_demo` profile still renders its bio and two articles.
+
+## Avatar rendering follow-up (2026-07-03)
+
+- Added one reusable avatar component with an initials fallback for missing,
+  invalid, or unavailable image URLs.
+- Rendered avatars in the signed-in navigation, profile header, article lists,
+  article metadata, comments, and the settings preview.
+- The demo seed now assigns a distinct mock avatar URL to every demo user.
+- Image URLs are limited to HTTP(S) in the renderer, decorative images do not
+  duplicate the adjacent username for assistive technology, and remote images
+  use a no-referrer policy.
+
+Fresh verification:
+
+- Vue type-check/production build, oxlint, ESLint, and `git diff --check`: PASS.
+- Docker Compose rebuild: PASS; backend healthy and frontend running.
+- Browser: profile and navigation avatars loaded at their natural dimensions;
+  10/10 visible home-feed avatars loaded; article and all three comment avatars
+  loaded; settings displayed a live preview and the saved URL.
+- Browser console: no warnings or errors. At 375 px, avatar layouts caused no
+  horizontal overflow.
+- Corrected article-list byline alignment after adding avatars: author names
+  and publication dates now share the same visual center line.
+
+## Continued submission audit (2026-07-03)
+
+The project was rechecked after the demo-data, stale-session, and avatar work.
+The review stayed inside the existing student-scale NestJS/Vue/Prisma design.
+
+### Additional issues found and fixed
+
+- **Oversized pagination caused 500:** very large numeric `limit` or `offset`
+  values reached Prisma outside JavaScript's safe integer range. Article lists
+  and feeds now share one small pagination parser, reject unsafe values by
+  falling back to the documented defaults, and cap page size at 100. The
+  OpenAPI `Limit` parameter documents that cap.
+- **Temporary 5xx destroyed the browser session:** startup session validation
+  now signs out only for an invalid/deleted identity (`401`/`404`) or a
+  mismatched successful response. A temporary backend failure keeps the local
+  session and lets the destination page show its normal error.
+- **Submission README wording:** the populated team table is no longer called
+  a set of placeholders. The README now links the optional local demo seed and
+  its mock credentials.
+- **Avatar/documentation consistency:** avatar images now include intrinsic
+  dimensions, and the architecture document explains that DiceBear URLs are
+  optional demo content with an initials fallback, not a required
+  infrastructure dependency.
+
+### Fresh verification evidence
+
+| Check | Result |
+| --- | --- |
+| Frozen pnpm install | PASS |
+| NestJS TypeScript build | PASS |
+| Vue type-check + production build | PASS |
+| oxlint + ESLint | PASS, 0 findings |
+| Redocly OpenAPI validation | PASS; valid document, 32 non-blocking style warnings |
+| OpenAPI vs Nest mapped routes | MATCH, 20 operations / 20 routes |
+| Dependency audit | 0 moderate/high/critical; the documented low Windows-only esbuild development-server advisory remains |
+| Separate clean-volume Compose stack | PASS on ports 5273/3100; migrations, healthcheck, frontend, and `/api` proxy verified |
+| API contract/security sweep | PASS, 138 assertions |
+| Browser workflow sweep | PASS, 35 assertions |
+| WCAG axe-core 4.12.1 sweep | PASS, 0 violations across 12 desktop/mobile public and authenticated pages |
+| Temporary-5xx session regression | PASS, 5 assertions |
+| Oversized pagination regression | PASS; unsafe `limit` and `offset` return 200 with safe defaults, not 500 |
+| Main Compose stack and preserved demo data | PASS; backend healthy, frontend running, 32 demo articles preserved |
+
+The browser sweep covered public and protected navigation, login, persisted
+auth navigation, keyboard skip link and focus visibility, 375/768/1280 px
+reflow, article avatars and date alignment, article create/update/delete with
+cancel and confirm paths, comments, favorites, settings feedback and avatar
+preview, profiles, follow/unfollow, feed, console errors, and HTTP 5xx
+monitoring.
+
+### Remaining risks unchanged
+
+- Verify the two team names and Matrikelnummern with both students before
+  submission.
+- The assignment requires a GitLab repository link, but the configured remote
+  is GitHub. Create/confirm the GitLab repository and push there manually.
+- The audit harnesses were temporary and are not a permanent automated test
+  suite.
+- Demo avatar URLs need network access for the SVG image; initials render when
+  they are unavailable, so app functionality is not blocked.

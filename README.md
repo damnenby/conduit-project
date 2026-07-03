@@ -7,7 +7,7 @@ personal feed of the authors they follow.
 
 ## Team
 
-> Replace the placeholders below before submitting. Do not leave them as-is.
+Verify these details with both team members before submitting.
 
 | Name | Matrikelnummer |
 | --- | --- |
@@ -46,6 +46,18 @@ Use `docker compose up --build` after changing dependencies or Dockerfiles.
 On startup the backend applies the database migrations automatically and the
 frontend waits until the backend is healthy. The SQLite file is stored in the
 `conduit-data` volume, so data survives restarts.
+
+### Optional demo data
+
+While the Docker stack is running, populate it with mock users, articles,
+comments, follows, and favorites:
+
+```bash
+node scripts/seed-demo.mjs
+```
+
+The mock credentials are documented in [`DEMO_USERS.md`](DEMO_USERS.md). They
+are local demonstration accounts, not real people or production credentials.
 
 ## Run locally (without Docker)
 

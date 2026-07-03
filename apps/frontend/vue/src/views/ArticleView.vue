@@ -4,6 +4,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { describeError } from '../composables/useApi'
 import { notifyError } from '../composables/useToast'
+import UserAvatar from '../components/UserAvatar.vue'
 
 type Article = {
   slug: string
@@ -17,6 +18,7 @@ type Article = {
   favoritesCount: number
   author: {
     username: string
+    image: string | null
   }
 }
 
@@ -26,6 +28,7 @@ type Comment = {
   createdAt: string
   author: {
     username: string
+    image: string | null
   }
 }
 
@@ -224,8 +227,16 @@ onMounted(() => {
   <article v-if="article" class="article-page">
     <h1>{{ article.title }}</h1>
     <p class="article-meta">
-      <RouterLink :to="`/profiles/${article.author.username}`">
-        {{ article.author.username }}
+      <RouterLink
+        :to="`/profiles/${article.author.username}`"
+        class="article-meta-author"
+      >
+        <UserAvatar
+          :image="article.author.image"
+          :username="article.author.username"
+          size="small"
+        />
+        <span>{{ article.author.username }}</span>
       </RouterLink>
       <time :datetime="article.createdAt">{{ formatDate(article.createdAt) }}</time>
     </p>
@@ -278,8 +289,16 @@ onMounted(() => {
         <p class="comment-body">{{ comment.body }}</p>
         <div class="comment-footer">
           <span class="comment-meta">
-            <RouterLink :to="`/profiles/${comment.author.username}`">
-              {{ comment.author.username }}
+            <RouterLink
+              :to="`/profiles/${comment.author.username}`"
+              class="comment-author"
+            >
+              <UserAvatar
+                :image="comment.author.image"
+                :username="comment.author.username"
+                size="small"
+              />
+              <span>{{ comment.author.username }}</span>
             </RouterLink>
             <time :datetime="comment.createdAt">{{ formatDate(comment.createdAt) }}</time>
           </span>

@@ -7,6 +7,3 @@ dist
 *.sqlite
 *.sqlite3
 .DS_Store
-.agents/
-skills-lock.json
-DESIGN.md

@@ -92,8 +92,9 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to) => {
-  const { isLoggedIn } = useAuth()
+router.beforeEach(async (to) => {
+  const { isLoggedIn, validateSession } = useAuth()
+  await validateSession()
 
   if (to.meta.requiresAuth && !isLoggedIn.value) {
     return { name: 'login' }

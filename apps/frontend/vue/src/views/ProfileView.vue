@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { describeError } from '../composables/useApi'
 import { notifyError } from '../composables/useToast'
 import EmptyState from '../components/EmptyState.vue'
+import UserAvatar from '../components/UserAvatar.vue'
 
 type Profile = {
   username: string
@@ -22,7 +23,8 @@ type Article = {
 }
 
 const route = useRoute()
-const { user, clearSession } = useAuth()
+const router = useRouter()
+const { user, clearSession, wasExpiredUser } = useAuth()
 const profile = ref<Profile | null>(null)
 const articles = ref<Article[]>([])
 const errorMessage = ref('')
@@ -50,23 +52,35 @@ const emptyMessage = computed(() =>
 
 const fetchProfile = async () => {
   errorMessage.value = ''
+  profile.value = null
 
   try {
     const username = route.params.username?.toString()
-    if (!username) return
+    if (!username) return false
 
     const headers = user.value ? { Authorization: `Token ${user.value.token}` } : undefined
     const response = await fetch(`/api/profiles/${username}`, { headers })
     const data = await response.json()
 
     if (!response.ok) {
+      if (
+        response.status === 404 &&
+        (user.value?.username === username || wasExpiredUser(username))
+      ) {
+        clearSession()
+        await router.replace({ name: 'login' })
+        return false
+      }
+
       errorMessage.value = describeError(response.status, data, 'Could not load profile.')
-      return
+      return false
     }
 
     profile.value = data.profile
+    return true
   } catch {
     errorMessage.value = 'Could not load profile.'
+    return false
   }
 }
 
@@ -101,6 +115,14 @@ const selectTab = (tab: 'articles' | 'favorited') => {
   activeTab.value = tab
 }
 
+const loadProfilePage = async () => {
+  articles.value = []
+  const profileLoaded = await fetchProfile()
+  if (profileLoaded) {
+    await fetchArticles()
+  }
+}
+
 const toggleFollow = async () => {
   if (!profile.value) return
 
@@ -132,38 +154,48 @@ const toggleFollow = async () => {
 }
 
 onMounted(() => {
-  fetchProfile()
-  fetchArticles()
+  loadProfilePage()
 })
 
 watch(activeTab, () => {
-  fetchArticles()
+  if (profile.value) {
+    fetchArticles()
+  }
 })
 
 watch(
   () => route.params.username,
   () => {
     activeTab.value = 'articles'
-    fetchProfile()
-    fetchArticles()
+    loadProfilePage()
   },
 )
 </script>
 
 <template>
   <section>
+    <header v-if="!profile && errorMessage" class="page-head">
+      <h1>Profile unavailable</h1>
+      <p class="page-head-sub">This profile does not exist or is no longer available.</p>
+    </header>
+
     <p v-if="errorMessage" class="error-message" role="alert">{{ errorMessage }}</p>
 
     <header v-if="profile" class="profile-head">
-      <h1>{{ profile.username }}</h1>
-      <p class="profile-bio">{{ profile.bio ?? 'No bio yet.' }}</p>
+      <div class="profile-identity">
+        <UserAvatar :image="profile.image" :username="profile.username" size="large" />
+        <div>
+          <h1>{{ profile.username }}</h1>
+          <p class="profile-bio">{{ profile.bio ?? 'No bio yet.' }}</p>
+        </div>
+      </div>
       <button v-if="!isOwnProfile" type="button" class="ghost" @click="toggleFollow">
         {{ profile.following ? 'Unfollow' : 'Follow' }}
       </button>
       <RouterLink v-else to="/settings" class="read-more">Edit profile</RouterLink>
     </header>
 
-    <section>
+    <section v-if="profile">
       <div class="profile-tabs" aria-label="Profile article filter">
         <button
           type="button"

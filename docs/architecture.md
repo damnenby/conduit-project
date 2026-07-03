@@ -41,8 +41,11 @@ flowchart LR
 
 - **Actors**: anonymous readers and registered authors. There is no separate
   admin role.
-- **External systems**: none. The app is self-contained and stores everything in
-  its own SQLite database. This keeps the project simple and reproducible.
+- **Required external systems**: none. The app is self-contained and stores
+  everything in its own SQLite database. The optional demo seed uses DiceBear
+  image URLs for mock avatars; if those images are unavailable, the Vue
+  component falls back to local initials, so core functionality remains
+  reproducible.
 - **Interface**: a browser talking HTTP to the frontend, and the frontend
   talking JSON to the backend REST API under `/api`.
 

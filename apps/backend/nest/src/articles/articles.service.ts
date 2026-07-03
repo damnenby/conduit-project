@@ -26,6 +26,25 @@ const commentInclude = {
   },
 } satisfies Prisma.CommentInclude;
 
+const DEFAULT_PAGE_SIZE = 20;
+const MAX_PAGE_SIZE = 100;
+
+const parsePagination = (query: any) => {
+  const requestedLimit = Number(query.limit ?? DEFAULT_PAGE_SIZE);
+  const requestedOffset = Number(query.offset ?? 0);
+
+  return {
+    limit:
+      Number.isSafeInteger(requestedLimit) && requestedLimit > 0
+        ? Math.min(requestedLimit, MAX_PAGE_SIZE)
+        : DEFAULT_PAGE_SIZE,
+    offset:
+      Number.isSafeInteger(requestedOffset) && requestedOffset > 0
+        ? requestedOffset
+        : 0,
+  };
+};
+
 type ArticleFromDatabase = Prisma.ArticleGetPayload<{
   include: typeof articleInclude;
 }>;
@@ -133,10 +152,7 @@ export class ArticlesService {
     const tag = query.tag?.toString();
     const author = query.author?.toString();
     const favorited = query.favorited?.toString();
-    const limit = Number(query.limit ?? 20);
-    const offset = Number(query.offset ?? 0);
-    const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 20;
-    const safeOffset = Number.isFinite(offset) && offset > 0 ? offset : 0;
+    const { limit, offset } = parsePagination(query);
     const where: Prisma.ArticleWhereInput = {};
 
     if (tag) where.tags = { some: { tag: { name: tag } } };
@@ -148,8 +164,8 @@ export class ArticlesService {
       this.prisma.article.findMany({
         where,
         orderBy: { createdAt: 'desc' },
-        skip: safeOffset,
-        take: safeLimit,
+        skip: offset,
+        take: limit,
         include: articleInclude,
       }),
       this.prisma.article.count({ where }),
@@ -227,10 +243,7 @@ export class ArticlesService {
 
   async feed(query: any, userId: number) {
     const user = await this.requireUser(userId);
-    const limit = Number(query.limit ?? 20);
-    const offset = Number(query.offset ?? 0);
-    const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 20;
-    const safeOffset = Number.isFinite(offset) && offset > 0 ? offset : 0;
+    const { limit, offset } = parsePagination(query);
 
     const where: Prisma.ArticleWhereInput = {
       author: {
@@ -246,8 +259,8 @@ export class ArticlesService {
       this.prisma.article.findMany({
         where,
         orderBy: { createdAt: 'desc' },
-        skip: safeOffset,
-        take: safeLimit,
+        skip: offset,
+        take: limit,
         include: articleInclude,
       }),
       this.prisma.article.count({ where }),

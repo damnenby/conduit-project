@@ -4,6 +4,7 @@ import { RouterLink, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { describeError } from '../composables/useApi'
 import { notifyError, notifySuccess } from '../composables/useToast'
+import UserAvatar from '../components/UserAvatar.vue'
 
 const router = useRouter()
 const { user, isLoggedIn, setUser, logout, clearSession } = useAuth()
@@ -99,6 +100,14 @@ const logoutAndGoHome = () => {
 
     <div v-else class="form-card">
       <form @submit.prevent="saveSettings">
+        <div class="avatar-preview">
+          <UserAvatar :image="image" :username="username || 'User'" size="large" />
+          <div>
+            <strong>Avatar preview</strong>
+            <span>Paste an HTTP(S) image URL below, or use the initials fallback.</span>
+          </div>
+        </div>
+
         <label>
           Username
           <input v-model="username" autocomplete="username" required />
@@ -116,7 +125,13 @@ const logoutAndGoHome = () => {
 
         <label>
           Image URL
-          <input v-model="image" placeholder="https://…" />
+          <input
+            v-model="image"
+            type="url"
+            inputmode="url"
+            autocomplete="url"
+            placeholder="https://…"
+          />
         </label>
 
         <label>
