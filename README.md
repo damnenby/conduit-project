@@ -35,8 +35,10 @@ personal feed of the authors they follow.
 The whole stack starts with a single command:
 
 ```bash
-docker compose up --build
+docker compose up
 ```
+
+Use `docker compose up --build` after changing dependencies or Dockerfiles.
 
 - Frontend: http://localhost:5173
 - Backend: http://localhost:3000
@@ -50,32 +52,41 @@ frontend waits until the backend is healthy. The SQLite file is stored in the
 Install dependencies:
 
 ```bash
-pnpm install
+corepack pnpm install
 ```
 
 Create the local SQLite database:
 
 ```bash
 cd libs/database/sqlite
-DATABASE_URL=file:./dev.db pnpm exec prisma migrate deploy --config prisma.config.ts
+DATABASE_URL=file:./dev.db corepack pnpm exec prisma migrate deploy --config prisma.config.ts
 cd ../../..
 ```
 
 Start the backend (terminal 1):
 
 ```bash
-pnpm start:nest
+corepack pnpm start:nest
 ```
 
 Start the frontend (terminal 2):
 
 ```bash
-pnpm start:vue
+corepack pnpm start:vue
 ```
 
 The frontend calls the API through relative `/api/...` paths. In development the
 Vite dev server proxies `/api` to the backend (see `apps/frontend/vue/vite.config.ts`),
 so there are no hardcoded `localhost` URLs in the frontend code.
+
+## Verify builds
+
+```bash
+corepack pnpm --filter nest build
+corepack pnpm --filter vue build
+docker compose config
+docker compose build
+```
 
 ## Environment variables
 
