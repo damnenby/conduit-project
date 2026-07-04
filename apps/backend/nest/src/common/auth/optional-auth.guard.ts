@@ -5,10 +5,7 @@ import { TokenService } from './token.service';
 
 type AuthedRequest = Request & { userId?: number };
 
-/**
- * Attaches the user id if a valid token is present, but still allows anonymous
- * access. NestJS equivalent of the old Express `optionalAuth` middleware.
- */
+/** Reads optional token authentication and allows anonymous requests. */
 @Injectable()
 export class OptionalAuthGuard implements CanActivate {
   constructor(private readonly tokenService: TokenService) {}

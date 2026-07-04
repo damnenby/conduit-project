@@ -1,11 +1,9 @@
 # Architecture
 
-This document describes the architecture of the Conduit project. The diagrams
-follow the views taught in the course (arc42 style): scope & context, building
-block, runtime, and infrastructure. They describe the system as it is actually
-implemented in this repository, not an idealized version.
+This document describes the implemented Conduit architecture using the context,
+building block, runtime, and infrastructure views taught in the course.
 
-## Overview
+## System overview
 
 Conduit is a small article/blogging application (a "RealWorld"-style app). It
 consists of:
@@ -15,14 +13,12 @@ consists of:
 - a **SQLite** database accessed through **Prisma** (`libs/database/sqlite`),
 - shared **TypeScript models** (`libs/model`).
 
-The whole system is a pnpm monorepo and can be started with `docker compose up`.
+The project is a pnpm monorepo and starts with `docker compose up`.
 The REST contract is defined in [`openapi.yaml`](./openapi.yaml).
 
----
+## 1. Scope and context view (Kontextabgrenzungssicht)
 
-## 1. Scope & Context View (Kontextabgrenzungssicht)
-
-The system as a black box, with the people and systems around it.
+This view shows the actors and external interfaces.
 
 ```mermaid
 flowchart LR
@@ -49,12 +45,9 @@ flowchart LR
 - **Interface**: a browser talking HTTP to the frontend, and the frontend
   talking JSON to the backend REST API under `/api`.
 
----
+## 2. Building block view (Bausteinsicht)
 
-## 2. Building Block View (Bausteinsicht)
-
-This opens the black box and shows the internal components and how they depend
-on each other. It mirrors the real folder structure.
+This view shows the main application modules and their dependencies.
 
 ```mermaid
 flowchart TB
@@ -124,13 +117,10 @@ flowchart TB
 | `libs/model` | Shared response types (`Article`, `Comment`, `Profile`, `User`), imported by the backend via the `@common/model` path alias. |
 | `libs/database` | Prisma schema, migrations, and the generated client, imported via `@common/database`. |
 
-The `@common/model` and `@common/database` path aliases are configured in the
-root `tsconfig.json`. This is the same "shared code in `/libs`" idea shown in the
-course reference repository.
+The root `tsconfig.json` defines the `@common/model` and `@common/database` path
+aliases.
 
----
-
-## 3. Runtime View (Laufzeitsicht)
+## 3. Runtime view (Laufzeitsicht)
 
 ### 3.1 Login
 
@@ -158,8 +148,7 @@ sequenceDiagram
 
 ### 3.2 Authenticated + authorized request (delete own article)
 
-This is the flow that shows how authorization protects ownership-sensitive
-actions.
+This flow separates token authentication from article ownership checks.
 
 ```mermaid
 sequenceDiagram
@@ -190,15 +179,12 @@ sequenceDiagram
     end
 ```
 
-The key point for the defense: authentication (is the token valid?) is handled by
-the `AuthGuard` and returns **401**, while authorization (does this user own the
-resource?) is checked inside the service and returns **403**.
+`AuthGuard` handles authentication and returns `401` for missing or invalid
+tokens. The service checks ownership and returns `403`.
 
----
+## 4. Infrastructure view (Infrastruktursicht)
 
-## 4. Infrastructure View (Infrastruktursicht)
-
-How the system is deployed with Docker Compose.
+This view shows the Docker Compose services and persistent volume.
 
 ```mermaid
 flowchart TB
@@ -231,27 +217,22 @@ flowchart TB
   `docker-compose.yml`. For a real deployment it would come from a secret/env
   store, not from version control.
 
----
-
-## Notable design decisions
+## Design decisions
 
 - **NestJS.** The backend uses NestJS to stay in the NestJS/TypeScript universe.
   Each resource is a module with a controller (HTTP layer) and a service (business
-  logic); the DI container wires them together. This is more structure than a bare
-  router framework, but it makes responsibilities explicit and is easy to explain.
+  logic). Nest's dependency injection connects the modules.
 - **Authorization with guards.** `AuthGuard` / `OptionalAuthGuard` are used
-  instead of middleware because guards integrate with Nest's execution context and
-  attach declaratively (`@UseGuards`) to exactly the routes that need them, keeping
-  the controller/service separation clean.
-- **Controller + service per module.** Controllers stay thin and only deal with
-  HTTP concerns (routing, status codes, guards, reading the body); the services
-  hold the validation and database logic. Validation is explicit in the services
-  (rather than DTO decorators) so the responses match the OpenAPI error contract
-  exactly.
-- **SQLite via Prisma.** A single-file database keeps the project reproducible
-  and easy to start in Docker; Prisma gives a typed client and migrations. The
-  connection lives in a global `PrismaService` that connects on `onModuleInit`.
+  instead of middleware because they attach with `@UseGuards` to the relevant
+  routes.
+- **Controller and service per module.** Controllers handle routing, status
+  codes, guards, and request data. Services handle validation and database logic.
+  Explicit service validation keeps responses consistent with the OpenAPI
+  contract.
+- **SQLite via Prisma.** SQLite keeps the project self-contained. Prisma provides
+  a typed client and migrations. A global `PrismaService` connects on
+  `onModuleInit`.
 - **Runtime via SWC.** The app runs from TypeScript source through
   `@swc-node/register`, because the Prisma 7 client is ESM (uses `import.meta`) and
-  NestJS DI needs decorator metadata — SWC supports both. `pnpm build` type-checks
+  NestJS DI needs decorator metadata. SWC supports both. `pnpm build` type-checks
   with `tsc`.

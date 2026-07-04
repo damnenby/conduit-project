@@ -1,8 +1,5 @@
 import { ref } from 'vue'
 
-// Simple toast notifications, rendered bottom-right by App.vue.
-// Views call notifyError / notifySuccess instead of showing inline banners.
-
 export type Toast = {
   id: number
   kind: 'error' | 'success'

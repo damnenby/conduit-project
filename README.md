@@ -7,8 +7,6 @@ personal feed of the authors they follow.
 
 ## Team
 
-Verify these details with both team members before submitting.
-
 | Name | Matrikelnummer |
 | --- | --- |
 | Valentyn Zhernovoi | 20474 |
@@ -24,11 +22,11 @@ Verify these details with both team members before submitting.
 
 ## Documentation
 
-- **API contract:** [`docs/openapi.yaml`](docs/openapi.yaml) — the OpenAPI 3.0
-  spec that the backend implements. Open it in any OpenAPI viewer (e.g.
+- **API contract:** [`docs/openapi.yaml`](docs/openapi.yaml) contains the OpenAPI
+  3.0 specification. Open it in an OpenAPI viewer such as
   [editor.swagger.io](https://editor.swagger.io/)).
-- **Architecture:** [`docs/architecture.md`](docs/architecture.md) — context,
-  building block, runtime, and infrastructure views (Mermaid diagrams).
+- **Architecture:** [`docs/architecture.md`](docs/architecture.md) contains the
+  context, building block, runtime, and infrastructure views.
 
 ## Run with Docker (recommended)
 
@@ -40,8 +38,8 @@ docker compose up
 
 Use `docker compose up --build` after changing dependencies or Dockerfiles.
 
-- Frontend: http://localhost:5173
-- Backend: http://localhost:3000
+- Frontend: [http://localhost:5173](http://localhost:5173)
+- Backend: [http://localhost:3000](http://localhost:3000)
 
 On startup the backend applies the database migrations automatically and the
 frontend waits until the backend is healthy. The SQLite file is stored in the
@@ -139,31 +137,36 @@ Tags: list tags in use.
 
 - **NestJS.** The backend uses NestJS to stay in the NestJS/TypeScript universe.
   It is organized into feature modules (`users`, `profiles`, `articles`, `tags`)
-  where **controllers** handle the HTTP layer and **services** hold the business
-  logic. Dependencies are wired through Nest's DI container; the database is a
-  global `PrismaModule`, and a single global exception filter keeps every error in
-  the `{ errors: { body } }` shape.
+  where controllers handle the HTTP layer and services hold the business logic.
+  Nest's dependency injection connects the modules. A global `PrismaModule`
+  provides database access, and a global exception filter keeps errors in the
+  `{ errors: { body } }` shape.
 - **Authorization via guards.** `AuthGuard` / `OptionalAuthGuard`
   (`apps/backend/nest/src/common/auth/`) read the `Authorization: Token <jwt>`
-  header. We use guards rather than middleware because they integrate with Nest's
-  execution context and attach cleanly to exactly the routes that need them.
-  Authentication failures return **401**; ownership failures (e.g. editing someone
-  else's article) are checked in the service and return **403**.
+  header. Guards attach to the routes that require authentication. Authentication
+  failures return `401`; services perform ownership checks and return `403`.
 - **Runtime (SWC, ESM).** The app runs from TypeScript source via
   `@swc-node/register`. SWC is used because the Prisma 7 client is ESM (it uses
-  `import.meta`) and NestJS DI needs decorator metadata — SWC supports both, which
+  `import.meta`) and NestJS DI needs decorator metadata. SWC supports both, while
   plain esbuild/`tsx` does not. `pnpm build` type-checks with `tsc`.
-- **SQLite + Prisma.** A single-file database keeps the project reproducible and
-  trivial to run in Docker, while Prisma provides a typed client and migrations.
+- **SQLite + Prisma.** SQLite keeps the Docker setup self-contained. Prisma
+  provides a typed client and migrations.
   The connection lives in a `PrismaService` that connects on `onModuleInit`.
 
 ## Known limitations / future work
 
 - The backend runs from TypeScript source via SWC rather than serving a compiled
-  bundle; this is fine for the project scope, but a production build would run
-  `nest build` and serve the compiled output.
-- The frontend runs the Vite dev server in Docker for simplicity; a production
-  setup would build static files and serve them behind a small web server.
-- There is no automated test suite; the API was verified manually.
-- SQLite is single-writer; it is a good fit for this demo but a larger
-  deployment would use a server database such as PostgreSQL.
+  bundle. A production setup would compile and run the output.
+- The frontend container runs the Vite development server. A production setup
+  would serve the built static files.
+- The repository has no permanent automated test suite.
+- SQLite permits one writer at a time. A larger deployment would use a database
+  server such as PostgreSQL.
+- Authentication data is stored in `localStorage`. A production application
+  would normally use a secure HttpOnly cookie.
+- Slugs use ASCII characters. Titles containing only non-Latin characters use
+  the fallback slug `article` with a numeric suffix when needed.
+- Single-page application route changes do not move keyboard focus to the new
+  page heading.
+- Demo avatars and the Newsreader font use external URLs. Avatars fall back to
+  initials and headings fall back to local serif fonts when offline.

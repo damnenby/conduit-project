@@ -31,7 +31,7 @@ const readSavedUser = (): AuthUser | null => {
     const parsed: unknown = JSON.parse(savedUser)
     if (isAuthUser(parsed)) return parsed
   } catch {
-    // Invalid local data is treated as a signed-out session.
+    // Ignore malformed stored sessions.
   }
 
   localStorage.removeItem(storageKey)
@@ -40,8 +40,7 @@ const readSavedUser = (): AuthUser | null => {
 
 const user = ref<AuthUser | null>(readSavedUser())
 
-// Set when a request is rejected with 401 and we clear a stale/expired token,
-// so the app can show one calm "please sign in" notice instead of a raw banner.
+// Controls the global expired-session notice.
 const sessionExpired = ref(false)
 const expiredUsername = ref<string | null>(null)
 let sessionValidated = user.value === null
@@ -65,7 +64,6 @@ export const useAuth = () => {
     localStorage.removeItem(storageKey)
   }
 
-  // Quietly drop an invalid login and flag that the session needs renewing.
   const clearSession = () => {
     if (user.value) {
       const username = user.value.username
@@ -104,8 +102,7 @@ export const useAuth = () => {
         }
 
         if (!response.ok) {
-          // A temporary backend failure should not destroy a valid local
-          // session. The destination page can still show its normal error.
+          // Keep the session when the backend is temporarily unavailable.
           return true
         }
 
@@ -129,8 +126,7 @@ export const useAuth = () => {
         }
         return true
       } catch {
-        // Keep the local session during a temporary network failure. Individual
-        // pages still handle request errors and invalid tokens normally.
+        // Keep the session during a temporary network failure.
         return true
       } finally {
         sessionValidated = true

@@ -1,12 +1,7 @@
-/* =========================================================================
-   Conduit — design foundation
-   A calm, editorial reading-platform style. Tokens first, then base
-   elements, then the small set of reusable component classes used across
-   views (cards, tags, forms, alerts, navbar).
-   ========================================================================= */
+/* Global styles and reusable UI classes. */
 
 :root {
-  /* Surfaces — warm paper, not clinical white */
+  /* Surfaces */
   --bg: #faf8f4;
   --surface: #ffffff;
   --surface-subtle: #f3f0ea;
@@ -21,14 +16,14 @@
   --border: #e7e2d8;
   --border-strong: #d6cfc1;
 
-  /* Ink = primary action; accent = links / active / favorited */
+  /* Actions and links */
   --ink: #20201d;
   --ink-hover: #34332e;
   --accent: #2f6f4f;
   --accent-hover: #265c41;
   --accent-soft: #ebf2ec;
 
-  /* Status — muted, not alarming */
+  /* Status colors */
   --danger: #a23b32;
   --danger-hover: #88322a;
   --danger-soft: #f8ece9;
@@ -166,7 +161,7 @@ aside {
   max-width: 100%;
 }
 
-/* A restrained page header used at the top of list/form views */
+/* Page headers */
 .page-head {
   margin-bottom: 28px;
 }
@@ -181,7 +176,7 @@ aside {
   font-size: 1.02rem;
 }
 
-/* Section header with a primary action on the right (e.g. "New article") */
+/* Page header with an action */
 .page-head--with-action {
   display: flex;
   align-items: flex-start;
@@ -289,7 +284,7 @@ aside {
   text-decoration: none;
 }
 
-/* Active route — clear but quiet */
+/* Active route */
 .site-nav .router-link-exact-active {
   color: var(--text-strong);
   font-weight: 600;
@@ -341,7 +336,7 @@ aside {
   object-fit: cover;
 }
 
-/* "New article" / "Sign up" — the one nav call-to-action */
+/* Navigation call to action */
 .nav-cta {
   color: var(--accent);
   border: 1px solid var(--border-strong);
@@ -419,7 +414,7 @@ button.ghost:hover:not(:disabled) {
   color: var(--text-strong);
 }
 
-/* Destructive — intentional but never loud */
+/* Destructive action */
 button.danger {
   background: var(--surface);
   border-color: var(--danger-border);
@@ -701,7 +696,7 @@ textarea:focus {
   white-space: nowrap;
 }
 
-/* Favorite button — compact pill, fills in when active */
+/* Favorite button */
 .favorite-button {
   width: auto;
   min-height: 0;

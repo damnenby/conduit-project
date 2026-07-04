@@ -1,15 +1,3 @@
-/**
- * Small helpers for talking to the `/api` backend consistently.
- *
- * The backend returns errors as `{ errors: { body: [message, ...] } }`.
- * `describeError` turns a response status + parsed body into a single,
- * user-friendly message so every view shows the same calm wording.
- *
- * 401 is handled separately by the views: they call `clearSession()` from
- * `useAuth`, which signs the stale token out and shows one global notice
- * instead of leaving a raw "Authorization token is invalid" banner.
- */
-
 type ApiErrorBody = {
   errors?: {
     body?: string[]

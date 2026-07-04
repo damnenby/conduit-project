@@ -2,10 +2,7 @@ import { Catch, HttpException, HttpStatus } from '@nestjs/common';
 import type { ArgumentsHost, ExceptionFilter } from '@nestjs/common';
 import type { Response } from 'express';
 
-/**
- * Normalizes every error to the Conduit error shape `{ errors: { body: [...] } }`
- * and logs unexpected errors, matching the behavior of the old Express handler.
- */
+/** Converts Nest exceptions to the OpenAPI error response shape. */
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {

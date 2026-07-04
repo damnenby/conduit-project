@@ -5,11 +5,7 @@ import { TokenService } from './token.service';
 
 type AuthedRequest = Request & { userId?: number };
 
-/**
- * Rejects requests without a valid `Authorization: Token <jwt>` header (401).
- * On success it attaches the user id to the request. This is the NestJS
- * equivalent of the old Express `requireAuth` middleware.
- */
+/** Requires `Authorization: Token <jwt>` and adds the user id to the request. */
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(private readonly tokenService: TokenService) {}
