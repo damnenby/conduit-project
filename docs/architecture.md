@@ -1,6 +1,6 @@
 # Architecture
 
-This document explains how we structured Conduit. It contains the context, building block, runtime, and infrastructure views for our application.
+This document shows how the main parts of our application work together. It contains the context, building block, runtime, and infrastructure views.
 
 ## System overview
 
@@ -201,8 +201,8 @@ flowchart TB
 
 ## Design decisions
 
-- **NestJS**: We use NestJS because the backend remains in TypeScript and its modules make the HTTP and business logic easy to locate. Each resource has a controller and a service.
+- **NestJS**: We use NestJS because it keeps the backend in TypeScript and gives us a clear module structure. Each resource has a controller and a service.
 - **Authorization with guards**: We attach `AuthGuard` and `OptionalAuthGuard` to the relevant routes with `@UseGuards`. This keeps route authentication visible in the controller.
 - **Controllers and services**: Our controllers handle routing, status codes, guards, and request data. Services validate input, access the database, and check ownership. This division keeps HTTP concerns separate from database-dependent rules.
-- **SQLite through Prisma**: We use SQLite because it runs as part of the local setup without another database service. Prisma gives us migrations and a typed client. The global `PrismaService` connects during `onModuleInit`.
+- **SQLite through Prisma**: We use SQLite because it works without a separate database server. Prisma gives us migrations and a typed client. The global `PrismaService` connects during `onModuleInit`.
 - **Runtime through SWC**: We run TypeScript through `@swc-node/register` because the Prisma 7 client uses ESM and NestJS requires decorator metadata. We use `tsc` to type-check the backend.

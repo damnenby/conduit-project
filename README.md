@@ -1,6 +1,6 @@
 # Conduit
 
-Conduit is our project for **Web Engineering II** at Hochschule Stralsund. It is an article platform where users can register, publish and edit articles, comment, favorite articles, follow authors, and read a personal feed.
+We built Conduit for **Web Engineering II** at Hochschule Stralsund. Users can create an account, publish articles, write comments, favorite articles, follow authors, and read a personal feed.
 
 ## Team
 
@@ -9,12 +9,12 @@ Conduit is our project for **Web Engineering II** at Hochschule Stralsund. It is
 | Valentyn Zhernovoi | 20474 |
 | Moafk Al Masre | 21755 |
 
-## Tech stack
+## Technology
 
 - **Frontend**: Vue 3, Vue Router, and Vite
 - **Backend**: NestJS 11 and TypeScript
 - **Database**: SQLite with Prisma 7 and the better-sqlite3 adapter
-- **Authentication**: JSON Web Tokens (JWT) through `@nestjs/jwt`; passwords are hashed with bcrypt
+- **Authentication**: JSON Web Tokens (JWT) and bcrypt password hashing
 - **Tooling**: pnpm workspaces and Docker Compose
 
 ## Documentation
@@ -22,30 +22,73 @@ Conduit is our project for **Web Engineering II** at Hochschule Stralsund. It is
 - **API contract**: [`docs/openapi.yaml`](docs/openapi.yaml) contains the OpenAPI 3.0 specification
 - **Architecture**: [`docs/architecture.md`](docs/architecture.md) contains the context, building block, runtime, and infrastructure views
 
-## Run with Docker (recommended)
+## Run with Docker
 
-Start the frontend, backend, and database with:
+Before starting, make sure Docker Desktop or Docker Engine is running and ports `3000` and `5173` are free. Docker Compose is included with Docker Desktop. You do not need a local Node.js or pnpm installation to start the application.
+
+Run this command from the repository root:
 
 ```bash
 docker compose up
 ```
 
-Use `docker compose up --build` after changing dependencies or Dockerfiles.
+On the first run, Docker builds both images and installs the dependencies. The backend then applies the Prisma migrations and starts NestJS. The frontend starts after the backend health check succeeds.
+
+Open the application after both services have started:
 
 - Frontend: [http://localhost:5173](http://localhost:5173)
 - Backend: [http://localhost:3000](http://localhost:3000)
+- Health check: [http://localhost:3000/api/health](http://localhost:3000/api/health)
 
-The backend applies database migrations before it starts. The frontend waits for the backend health check. Docker stores the SQLite file in the `conduit-data` volume, so the data remains available after a restart.
+Press `Ctrl+C` to stop the attached containers. Then remove the stopped containers and network:
 
-### Optional demo data
+```bash
+docker compose down
+```
 
-While the Docker stack is running, add the sample users, articles, comments, follows, and favorites:
+The SQLite database stays in the `conduit-data` volume. The next start uses the same users and articles.
+
+After changing source files, dependencies, or a Dockerfile, rebuild the images:
+
+```bash
+docker compose up --build
+```
+
+To run the containers in the background, add `-d`:
+
+```bash
+docker compose up -d
+docker compose ps
+```
+
+Use `docker compose logs -f` to follow the logs. Use `docker compose down` when you are finished.
+
+### Add sample data
+
+A new Docker volume contains an empty database. To add the sample users, articles, comments, follows, and favorites, keep Docker running and execute:
 
 ```bash
 node scripts/seed-demo.mjs
 ```
 
-The account credentials are listed in [`DEMO_USERS.md`](DEMO_USERS.md). All email addresses use the reserved `.test` domain.
+This optional script requires Node.js 18 or newer on the host. The account credentials are listed in [`DEMO_USERS.md`](DEMO_USERS.md).
+
+### Reset the Docker database
+
+To remove all local users, articles, and comments, stop the stack and delete its volume:
+
+```bash
+docker compose down -v
+docker compose up
+```
+
+The `-v` option deletes the SQLite volume. Do not use it when you want to keep the current data.
+
+### Docker problems
+
+- If Docker reports that it cannot connect to the daemon, start Docker Desktop or the Docker service.
+- If port `3000` or `5173` is already in use, stop the other process before starting Compose.
+- If a container exits, inspect its output with `docker compose logs backend` or `docker compose logs frontend`.
 
 ## Run locally (without Docker)
 
@@ -75,7 +118,7 @@ Start the frontend (terminal 2):
 corepack pnpm start:vue
 ```
 
-The frontend uses relative `/api/...` paths. The Vite development server proxies these requests to the backend according to `apps/frontend/vue/vite.config.ts`.
+The frontend uses relative `/api` paths. The Vite development server proxies these requests to the backend according to `apps/frontend/vue/vite.config.ts`.
 
 ## Verify builds
 
@@ -94,11 +137,11 @@ docker compose build
 | `JWT_SECRET` | backend | `dev-secret` | Secret used to sign/verify JWTs |
 | `VITE_API_PROXY_TARGET` | frontend (dev/proxy) | `http://localhost:3000` | Where the Vite proxy forwards `/api` (set to `http://backend:3000` in Docker) |
 
-We use these defaults for local development. Set a separate `JWT_SECRET` before running the application on another system. The backend example is in `apps/backend/nest/.env.example`.
+We use these values for local development. The backend example is in `apps/backend/nest/.env.example`.
 
 ## Project structure
 
-```
+```text
 apps/
   backend/nest/      NestJS + TypeScript REST API
   frontend/vue/      Vue 3 single-page app
@@ -113,21 +156,23 @@ docker-compose.yml   Backend + frontend services
 
 ## Implemented use cases
 
-Auth & profile: register, log in, get/update current user, view profile, follow
-and unfollow authors. Articles: create, edit (author only), delete (author only),
-list with pagination, view one, filter by tag/author/favorited, personal feed.
-Engagement: comment on articles, delete own comments, favorite/unfavorite.
-Tags: list tags in use.
+- Register, log in, and update the current user
+- View profiles and follow or unfollow authors
+- Create, edit, delete, list, and filter articles
+- Read a feed from followed authors
+- Create and delete comments
+- Favorite and unfavorite articles
+- List the tags used by articles
 
-## Architecture decisions
+## Why we structured it this way
 
-- **NestJS**: We divide the backend into the `users`, `profiles`, `articles`, and `tags` modules. Controllers handle HTTP requests, while services contain validation and database operations. NestJS dependency injection connects these modules.
-- **Authentication and authorization**: Our guards read the `Authorization: Token <jwt>` header. `AuthGuard` protects authenticated routes, and `OptionalAuthGuard` adds user data when a valid token is available. Services check article and comment ownership because they already have access to the required database records.
-- **Error responses**: We register one exception filter to keep errors in the `{ errors: { body } }` format defined by the API contract.
-- **TypeScript runtime**: We run the backend source through `@swc-node/register`. The Prisma 7 client uses ECMAScript modules (ESM), and NestJS dependency injection requires decorator metadata. SWC supports both requirements. The build command uses `tsc` for type checking.
-- **SQLite and Prisma**: We use SQLite to keep the database inside the Docker setup. Prisma supplies the generated client and migrations. `PrismaService` creates the shared database connection.
+- **NestJS modules**: We group the backend by `users`, `profiles`, `articles`, and `tags`. Controllers handle HTTP requests. Services validate data and perform the database operations.
+- **Guards**: `AuthGuard` protects routes that require a login. `OptionalAuthGuard` reads a token when one is present but still allows public access. We check ownership in the services because that is where we load articles and comments.
+- **Error format**: One exception filter keeps backend errors in the `{ errors: { body } }` format from the OpenAPI specification.
+- **Prisma**: `PrismaService` gives the backend one shared database connection. Prisma also manages the schema and migrations.
+- **SWC runtime**: The backend runs TypeScript through `@swc-node/register`. We need SWC because Prisma 7 uses ECMAScript modules and NestJS needs decorator metadata. The build command still uses `tsc` for type checking.
 
-## Known limitations / future work
+## Current limitations
 
 - We run the backend from TypeScript source through SWC. We do not create and run a compiled backend bundle in Docker.
 - The frontend container runs the Vite development server instead of serving the built static files.
