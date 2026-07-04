@@ -3,8 +3,8 @@ const DEMO_PASSWORD = process.env.CONDUIT_DEMO_PASSWORD ?? 'Conduit2026!'
 
 const users = [
   {
-    username: 'defense_demo',
-    email: 'defense.demo@conduit.test',
+    username: 'community_host',
+    email: 'community.host@conduit.test',
     bio: 'Community host collecting practical stories from the Conduit community.',
   },
   {
@@ -15,7 +15,7 @@ const users = [
   {
     username: 'jonas_backend',
     email: 'jonas_backend@conduit.test',
-    bio: 'Backend student exploring NestJS, APIs and pragmatic architecture.',
+    bio: 'Backend developer exploring NestJS, APIs and pragmatic architecture.',
   },
   {
     username: 'lina_design',
@@ -50,7 +50,7 @@ const users = [
   {
     username: 'paul_docker',
     email: 'paul_docker@conduit.test',
-    bio: 'DevOps student interested in reproducible environments and boring reliability.',
+    bio: 'Platform developer interested in reproducible environments and boring reliability.',
   },
   {
     username: 'olga_cooks',
@@ -65,12 +65,12 @@ const users = [
   {
     username: 'emil_career',
     email: 'emil_career@conduit.test',
-    bio: 'Career mentor helping students explain what they built and why.',
+    bio: 'Career mentor helping developers explain what they built and why.',
   },
   {
     username: 'katya_notes',
     email: 'katya_notes@conduit.test',
-    bio: 'International student writing in English, Deutsch und manchmal по-русски.',
+    bio: 'Multilingual writer using English, Deutsch und manchmal по-русски.',
   },
   {
     username: 'noah_data',
@@ -80,22 +80,22 @@ const users = [
   {
     username: 'zara_security',
     email: 'zara_security@conduit.test',
-    bio: 'Application-security student interested in auth boundaries and threat modeling.',
+    bio: 'Application-security learner interested in auth boundaries and threat modeling.',
   },
 ]
 
 const articles = [
   {
-    author: 'defense_demo',
+    author: 'community_host',
     title: 'Welcome to our busy little Conduit',
     description: 'A quick map of the people, topics and conversations you can find here.',
-    body: `This demo community brings together developers, designers, travelers, cooks and curious students. Every profile has its own interests, but the useful conversations usually happen where those interests overlap.
+    body: `This community brings together developers, designers, travelers, cooks and curious readers. Every profile has its own interests, but the useful conversations usually happen where those interests overlap.
 
-Browse by tag, follow a few writers and try the personal feed. The data is intentionally varied so article lists, profiles, comments and favorites all feel like a living application during testing.`,
+Browse by tag, follow a few writers and try the personal feed. Articles cover several topics, and the discussions connect people with different interests.`,
     tags: ['community', 'welcome', 'conduit'],
   },
   {
-    author: 'defense_demo',
+    author: 'community_host',
     title: 'How we keep community discussions useful',
     description: 'Four small habits that make comments worth reading.',
     body: `A useful comment adds a concrete example, asks a precise question or connects the article to another experience. Agreement is welcome, but context is even better.
@@ -127,16 +127,16 @@ Most bugs become ordinary once the state path is written down. Add one focused l
     description: 'Authentication belongs at the route boundary; ownership needs database context.',
     body: `Our authentication guard has one job: read the Token header, verify the JWT and attach a user id. It does not decide whether that user owns a particular article.
 
-Ownership checks stay in the service, where the article is already loaded. This separation makes the difference between 401 and 403 easy to explain in a defense.`,
+Ownership checks stay in the service, where the article is already loaded. This keeps the responsibilities for 401 and 403 responses separate.`,
     tags: ['nestjs', 'authentication', 'backend'],
   },
   {
     author: 'jonas_backend',
     title: 'Thin controllers and useful services',
-    description: 'A student-friendly NestJS structure without enterprise ceremony.',
+    description: 'A direct NestJS structure without extra application layers.',
     body: `Controllers translate HTTP into method calls: route parameters, request bodies, status codes and guards. Services validate the input and perform the business operation.
 
-That is enough structure for this project. Extra layers would add vocabulary without adding a real variation point, so we keep the module easy to navigate.`,
+The current modules have one implementation of each operation. Extra layers would add more interfaces without separating different implementations, so the request flow stays direct.`,
     tags: ['nestjs', 'architecture', 'typescript'],
   },
   {
@@ -308,16 +308,16 @@ Plain language helps everyone. “Email must be valid” is more useful than a v
     body: `“Modern” and “scalable” say little without context. A stronger portfolio explains the constraint, the choice and the consequence.
 
 One carefully explained project can demonstrate more judgment than five screenshots with identical technology lists.`,
-    tags: ['career', 'portfolio', 'students'],
+    tags: ['career', 'portfolio', 'communication'],
   },
   {
     author: 'emil_career',
-    title: 'Preparing for an oral project defense',
-    description: 'Practice the reasoning chain, not a memorized speech.',
+    title: 'Explaining a technical project clearly',
+    description: 'Present the reasoning behind the code instead of listing technologies.',
     body: `Start with the contract your system must satisfy. Then explain how the major building blocks collaborate and where important decisions live.
 
-Expect follow-up questions about tradeoffs. A limitation you understand is easier to defend than complexity you cannot justify.`,
-    tags: ['career', 'defense', 'architecture'],
+Use specific examples when discussing tradeoffs. A known limitation with a clear explanation says more than complexity without a reason.`,
+    tags: ['career', 'communication', 'architecture'],
   },
   {
     author: 'katya_notes',
@@ -367,7 +367,7 @@ Article ownership is a database fact. Keep that check where the article can be l
   {
     author: 'zara_security',
     title: 'A small-project security review that stays useful',
-    description: 'Focus on realistic failure paths before adding a large framework.',
+    description: 'Focus on likely failure paths before adding a large framework.',
     body: `Check password hashing, token validation, ownership, input handling, error leakage and committed secrets. Then exercise the negative paths with real requests.
 
 Security work is strongest when it produces evidence. A focused 401 and 403 test is worth more than a long checklist nobody ran.`,

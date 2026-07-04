@@ -1,20 +1,17 @@
 # Architecture
 
-This document describes the implemented Conduit architecture using the context,
-building block, runtime, and infrastructure views taught in the course.
+This document explains how we structured Conduit. It contains the context, building block, runtime, and infrastructure views for our application.
 
 ## System overview
 
-Conduit is a small article/blogging application (a "RealWorld"-style app). It
-consists of:
+We split Conduit into the following parts:
 
-- a **Vue 3** single-page frontend (`apps/frontend/vue`),
-- a **NestJS + TypeScript** REST backend (`apps/backend/nest`),
-- a **SQLite** database accessed through **Prisma** (`libs/database/sqlite`),
-- shared **TypeScript models** (`libs/model`).
+- a **Vue 3** single-page frontend in `apps/frontend/vue`
+- a **NestJS and TypeScript** REST backend in `apps/backend/nest`
+- a **SQLite** database accessed through **Prisma** in `libs/database/sqlite`
+- shared **TypeScript models** in `libs/model`
 
-The project is a pnpm monorepo and starts with `docker compose up`.
-The REST contract is defined in [`openapi.yaml`](./openapi.yaml).
+We keep the code in a pnpm monorepo and start the application with `docker compose up`. [`openapi.yaml`](./openapi.yaml) defines the REST contract.
 
 ## 1. Scope and context view (Kontextabgrenzungssicht)
 
@@ -35,15 +32,9 @@ flowchart LR
     app -->|"HTML/JS + JSON over HTTP"| author
 ```
 
-- **Actors**: anonymous readers and registered authors. There is no separate
-  admin role.
-- **Required external systems**: none. The app is self-contained and stores
-  everything in its own SQLite database. The optional demo seed uses DiceBear
-  image URLs for mock avatars; if those images are unavailable, the Vue
-  component falls back to local initials, so core functionality remains
-  reproducible.
-- **Interface**: a browser talking HTTP to the frontend, and the frontend
-  talking JSON to the backend REST API under `/api`.
+- **Actors**: We distinguish between anonymous readers and registered authors. We do not have an administrator role.
+- **External systems**: The application stores its data in its own SQLite database. The sample data uses DiceBear image URLs for avatars, but the frontend displays initials when an image is unavailable.
+- **Interface**: The browser loads the Vue frontend over HTTP. The frontend exchanges JSON with the REST API under `/api`.
 
 ## 2. Building block view (Bausteinsicht)
 
@@ -148,7 +139,7 @@ sequenceDiagram
 
 ### 3.2 Authenticated + authorized request (delete own article)
 
-This flow separates token authentication from article ownership checks.
+We separate token authentication from article ownership checks in this flow.
 
 ```mermaid
 sequenceDiagram
@@ -179,8 +170,7 @@ sequenceDiagram
     end
 ```
 
-`AuthGuard` handles authentication and returns `401` for missing or invalid
-tokens. The service checks ownership and returns `403`.
+`AuthGuard` handles authentication and returns `401` for a missing or invalid token. `ArticlesService` checks ownership and returns `403` when the authenticated user does not own the article.
 
 ## 4. Infrastructure view (Infrastruktursicht)
 
@@ -202,37 +192,17 @@ flowchart TB
     be --- vol
 ```
 
-- **Two containers**: `frontend` and `backend`, on the default Compose network.
-- **Service-name networking**: the frontend proxies `/api` to
-  `http://backend:3000` (service name `backend`, **not** `localhost`), which is
-  required for container-to-container communication.
-- **Ports**: `5173` (frontend) and `3000` (backend) are mapped to the host.
-- **Volume**: `conduit-data` is mounted at `/data` and stores the SQLite file, so
-  data survives container restarts.
-- **Startup order**: the backend has a healthcheck on `/api/health`; the frontend
-  uses `depends_on: condition: service_healthy`, so it only starts once the
-  backend is ready. The backend runs `prisma migrate deploy` before starting, so
-  the schema always exists.
-- **Secrets**: `JWT_SECRET` is a documented local demo default in
-  `docker-compose.yml`. For a real deployment it would come from a secret/env
-  store, not from version control.
+- **Containers**: We run the `frontend` and `backend` services on the default Compose network.
+- **Service-name networking**: The frontend proxies `/api` to `http://backend:3000`. Containers use the Compose service name `backend` instead of `localhost`.
+- **Ports**: We map frontend port `5173` and backend port `3000` to the host.
+- **Volume**: We mount `conduit-data` at `/data` for the SQLite file. This keeps the data between container restarts.
+- **Startup order**: The backend health check calls `/api/health`. The frontend uses `depends_on: condition: service_healthy` and starts after the backend responds. The backend applies Prisma migrations before NestJS starts.
+- **Secret**: `docker-compose.yml` contains a `JWT_SECRET` for local use. We can replace it through the environment when running the application elsewhere.
 
 ## Design decisions
 
-- **NestJS.** The backend uses NestJS to stay in the NestJS/TypeScript universe.
-  Each resource is a module with a controller (HTTP layer) and a service (business
-  logic). Nest's dependency injection connects the modules.
-- **Authorization with guards.** `AuthGuard` / `OptionalAuthGuard` are used
-  instead of middleware because they attach with `@UseGuards` to the relevant
-  routes.
-- **Controller and service per module.** Controllers handle routing, status
-  codes, guards, and request data. Services handle validation and database logic.
-  Explicit service validation keeps responses consistent with the OpenAPI
-  contract.
-- **SQLite via Prisma.** SQLite keeps the project self-contained. Prisma provides
-  a typed client and migrations. A global `PrismaService` connects on
-  `onModuleInit`.
-- **Runtime via SWC.** The app runs from TypeScript source through
-  `@swc-node/register`, because the Prisma 7 client is ESM (uses `import.meta`) and
-  NestJS DI needs decorator metadata. SWC supports both. `pnpm build` type-checks
-  with `tsc`.
+- **NestJS**: We use NestJS because the backend remains in TypeScript and its modules make the HTTP and business logic easy to locate. Each resource has a controller and a service.
+- **Authorization with guards**: We attach `AuthGuard` and `OptionalAuthGuard` to the relevant routes with `@UseGuards`. This keeps route authentication visible in the controller.
+- **Controllers and services**: Our controllers handle routing, status codes, guards, and request data. Services validate input, access the database, and check ownership. This division keeps HTTP concerns separate from database-dependent rules.
+- **SQLite through Prisma**: We use SQLite because it runs as part of the local setup without another database service. Prisma gives us migrations and a typed client. The global `PrismaService` connects during `onModuleInit`.
+- **Runtime through SWC**: We run TypeScript through `@swc-node/register` because the Prisma 7 client uses ESM and NestJS requires decorator metadata. We use `tsc` to type-check the backend.

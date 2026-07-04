@@ -1,9 +1,6 @@
 # Conduit
 
-A small article/blogging app (a "RealWorld"-style project) built for
-**Web Engineering II** at Hochschule Stralsund. Users can register, log in, write
-and edit articles, comment, favorite articles, follow other authors, and read a
-personal feed of the authors they follow.
+Conduit is our project for **Web Engineering II** at Hochschule Stralsund. It is an article platform where users can register, publish and edit articles, comment, favorite articles, follow authors, and read a personal feed.
 
 ## Team
 
@@ -14,23 +11,20 @@ personal feed of the authors they follow.
 
 ## Tech stack
 
-- **Frontend:** Vue 3 + Vue Router, built with Vite
-- **Backend:** NestJS 11 + TypeScript
-- **Database:** SQLite via Prisma 7 (better-sqlite3 driver adapter)
-- **Auth:** JWT (`@nestjs/jwt`), sent as `Authorization: Token <jwt>`; passwords hashed with bcrypt
-- **Tooling:** pnpm workspaces (monorepo), Docker Compose
+- **Frontend**: Vue 3, Vue Router, and Vite
+- **Backend**: NestJS 11 and TypeScript
+- **Database**: SQLite with Prisma 7 and the better-sqlite3 adapter
+- **Authentication**: JSON Web Tokens (JWT) through `@nestjs/jwt`; passwords are hashed with bcrypt
+- **Tooling**: pnpm workspaces and Docker Compose
 
 ## Documentation
 
-- **API contract:** [`docs/openapi.yaml`](docs/openapi.yaml) contains the OpenAPI
-  3.0 specification. Open it in an OpenAPI viewer such as
-  [editor.swagger.io](https://editor.swagger.io/)).
-- **Architecture:** [`docs/architecture.md`](docs/architecture.md) contains the
-  context, building block, runtime, and infrastructure views.
+- **API contract**: [`docs/openapi.yaml`](docs/openapi.yaml) contains the OpenAPI 3.0 specification
+- **Architecture**: [`docs/architecture.md`](docs/architecture.md) contains the context, building block, runtime, and infrastructure views
 
 ## Run with Docker (recommended)
 
-The whole stack starts with a single command:
+Start the frontend, backend, and database with:
 
 ```bash
 docker compose up
@@ -41,21 +35,17 @@ Use `docker compose up --build` after changing dependencies or Dockerfiles.
 - Frontend: [http://localhost:5173](http://localhost:5173)
 - Backend: [http://localhost:3000](http://localhost:3000)
 
-On startup the backend applies the database migrations automatically and the
-frontend waits until the backend is healthy. The SQLite file is stored in the
-`conduit-data` volume, so data survives restarts.
+The backend applies database migrations before it starts. The frontend waits for the backend health check. Docker stores the SQLite file in the `conduit-data` volume, so the data remains available after a restart.
 
 ### Optional demo data
 
-While the Docker stack is running, populate it with mock users, articles,
-comments, follows, and favorites:
+While the Docker stack is running, add the sample users, articles, comments, follows, and favorites:
 
 ```bash
 node scripts/seed-demo.mjs
 ```
 
-The mock credentials are documented in [`DEMO_USERS.md`](DEMO_USERS.md). They
-are local demonstration accounts, not real people or production credentials.
+The account credentials are listed in [`DEMO_USERS.md`](DEMO_USERS.md). All email addresses use the reserved `.test` domain.
 
 ## Run locally (without Docker)
 
@@ -85,9 +75,7 @@ Start the frontend (terminal 2):
 corepack pnpm start:vue
 ```
 
-The frontend calls the API through relative `/api/...` paths. In development the
-Vite dev server proxies `/api` to the backend (see `apps/frontend/vue/vite.config.ts`),
-so there are no hardcoded `localhost` URLs in the frontend code.
+The frontend uses relative `/api/...` paths. The Vite development server proxies these requests to the backend according to `apps/frontend/vue/vite.config.ts`.
 
 ## Verify builds
 
@@ -106,9 +94,7 @@ docker compose build
 | `JWT_SECRET` | backend | `dev-secret` | Secret used to sign/verify JWTs |
 | `VITE_API_PROXY_TARGET` | frontend (dev/proxy) | `http://localhost:3000` | Where the Vite proxy forwards `/api` (set to `http://backend:3000` in Docker) |
 
-The defaults are local demo values only. A real deployment would provide a strong
-`JWT_SECRET` from a secret store. An example file is in
-`apps/backend/nest/.env.example`.
+We use these defaults for local development. Set a separate `JWT_SECRET` before running the application on another system. The backend example is in `apps/backend/nest/.env.example`.
 
 ## Project structure
 
@@ -133,40 +119,21 @@ list with pagination, view one, filter by tag/author/favorited, personal feed.
 Engagement: comment on articles, delete own comments, favorite/unfavorite.
 Tags: list tags in use.
 
-## Design decisions (for the defense)
+## Architecture decisions
 
-- **NestJS.** The backend uses NestJS to stay in the NestJS/TypeScript universe.
-  It is organized into feature modules (`users`, `profiles`, `articles`, `tags`)
-  where controllers handle the HTTP layer and services hold the business logic.
-  Nest's dependency injection connects the modules. A global `PrismaModule`
-  provides database access, and a global exception filter keeps errors in the
-  `{ errors: { body } }` shape.
-- **Authorization via guards.** `AuthGuard` / `OptionalAuthGuard`
-  (`apps/backend/nest/src/common/auth/`) read the `Authorization: Token <jwt>`
-  header. Guards attach to the routes that require authentication. Authentication
-  failures return `401`; services perform ownership checks and return `403`.
-- **Runtime (SWC, ESM).** The app runs from TypeScript source via
-  `@swc-node/register`. SWC is used because the Prisma 7 client is ESM (it uses
-  `import.meta`) and NestJS DI needs decorator metadata. SWC supports both, while
-  plain esbuild/`tsx` does not. `pnpm build` type-checks with `tsc`.
-- **SQLite + Prisma.** SQLite keeps the Docker setup self-contained. Prisma
-  provides a typed client and migrations.
-  The connection lives in a `PrismaService` that connects on `onModuleInit`.
+- **NestJS**: We divide the backend into the `users`, `profiles`, `articles`, and `tags` modules. Controllers handle HTTP requests, while services contain validation and database operations. NestJS dependency injection connects these modules.
+- **Authentication and authorization**: Our guards read the `Authorization: Token <jwt>` header. `AuthGuard` protects authenticated routes, and `OptionalAuthGuard` adds user data when a valid token is available. Services check article and comment ownership because they already have access to the required database records.
+- **Error responses**: We register one exception filter to keep errors in the `{ errors: { body } }` format defined by the API contract.
+- **TypeScript runtime**: We run the backend source through `@swc-node/register`. The Prisma 7 client uses ECMAScript modules (ESM), and NestJS dependency injection requires decorator metadata. SWC supports both requirements. The build command uses `tsc` for type checking.
+- **SQLite and Prisma**: We use SQLite to keep the database inside the Docker setup. Prisma supplies the generated client and migrations. `PrismaService` creates the shared database connection.
 
 ## Known limitations / future work
 
-- The backend runs from TypeScript source via SWC rather than serving a compiled
-  bundle. A production setup would compile and run the output.
-- The frontend container runs the Vite development server. A production setup
-  would serve the built static files.
-- The repository has no permanent automated test suite.
-- SQLite permits one writer at a time. A larger deployment would use a database
-  server such as PostgreSQL.
-- Authentication data is stored in `localStorage`. A production application
-  would normally use a secure HttpOnly cookie.
-- Slugs use ASCII characters. Titles containing only non-Latin characters use
-  the fallback slug `article` with a numeric suffix when needed.
-- Single-page application route changes do not move keyboard focus to the new
-  page heading.
-- Demo avatars and the Newsreader font use external URLs. Avatars fall back to
-  initials and headings fall back to local serif fonts when offline.
+- We run the backend from TypeScript source through SWC. We do not create and run a compiled backend bundle in Docker.
+- The frontend container runs the Vite development server instead of serving the built static files.
+- We do not have a permanent automated test suite yet.
+- SQLite permits one writer at a time.
+- The frontend stores authentication data in `localStorage` instead of a secure HttpOnly cookie.
+- Slugs use ASCII characters. Titles containing only non-Latin characters use `article`, followed by a numeric suffix when required.
+- Route changes do not move keyboard focus to the new page heading.
+- Sample avatars and the Newsreader font use external URLs. The interface uses initials and local serif fonts when those resources are unavailable.
